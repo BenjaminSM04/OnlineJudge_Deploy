@@ -76,8 +76,8 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
 1. **Clonar el repositorio:**
 
    ```bash
-   git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git
-   cd TU_REPOSITORIO
+   git clone https://github.com/BenjaminSM04/OnlineJudge_Deploy
+   cd OnlineJudge_Deploy
    ```
 
 2. **Construir y levantar los servicios:**
@@ -174,8 +174,8 @@ docker-compose up -d --build oj-backend
 
 | Rol | Nombre |
 |-----|--------|
-| Desarrollador | *[Tu nombre aquí]* |
-| Materia | Sistemas II |
+| Desarrolladores | Alvaro Benjamin Saenz Molina, Brisa Sindel Criales Mayta, Grisel Abigail Aranda Ojeda, Brenda Michelle Alanoca Challco |
+| Materia | Proyecto de Sistemas II |
 | Universidad | Universidad Privada del Valle (UNIVALLE) |
 
 ---
