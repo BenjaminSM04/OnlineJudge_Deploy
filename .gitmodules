@@ -1,0 +1,6 @@
+[submodule "OnlineJudge"]
+	path = OnlineJudge
+	url = https://github.com/BenjaminSM04/PS2B2026-JuezVirtual_Backend
+[submodule "OnlineJudgeFE"]
+	path = OnlineJudgeFE
+	url = https://github.com/BenjaminSM04/PS2B2026-JuezVirtual_frontend
