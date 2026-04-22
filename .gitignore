@@ -1,0 +1,18 @@
+# Datos persistentes de Docker
+data/
+
+# Dependencias de Node.js
+node_modules/
+
+# Entornos virtuales de Python
+.venv/
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# SO
+Thumbs.db
+.DS_Store

@@ -1,0 +1,7 @@
+**/.git
+**/node_modules
+**/.venv
+**/.vscode
+**/data
+**/__pycache__
+**/*.pyc
