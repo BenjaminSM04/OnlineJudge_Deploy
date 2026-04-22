@@ -1,6 +1,6 @@
 # =============================================================================
-# Dockerfile para OnlineJudge (Backend + Frontend desde código local)
-# Build context: directorio raíz del proyecto (donde están OnlineJudge/ y OnlineJudgeFE/)
+# Dockerfile para OnlineJudge (Backend + Frontend desde cÃ³digo local)
+# Build context: directorio raÃ­z del proyecto (donde estÃ¡n OnlineJudge/ y OnlineJudgeFE/)
 # =============================================================================
 
 # --- Etapa 1: Compilar el Frontend ---
@@ -15,14 +15,14 @@ WORKDIR /fe
 COPY ./OnlineJudgeFE/package.json ./OnlineJudgeFE/package-lock.json* ./
 RUN npm install --legacy-peer-deps
 
-# Copiar el resto del código fuente del frontend y compilar
+# Copiar el resto del cÃ³digo fuente del frontend y compilar
 COPY ./OnlineJudgeFE/ ./
 
 # Inicializar un repo git dummy (el .git real se excluye por .dockerignore)
 # Esto es necesario porque config/dev.env.js ejecuta "git rev-parse HEAD"
 RUN git init && git add -A && git -c user.email="build@local" -c user.name="build" commit -m "build" --allow-empty
 
-RUN npm run build
+RUN npm run build:dll && npm run build
 
 
 # --- Etapa 2: Imagen final del Backend ---
@@ -40,20 +40,18 @@ COPY ./OnlineJudge/deploy/requirements.txt /app/deploy/
 # pillow: libjpeg-turbo-dev zlib-dev freetype-dev
 RUN --mount=type=cache,target=/etc/apk/cache,id=apk-cache-$TARGETARCH$TARGETVARIANT-final \
     --mount=type=cache,target=/root/.cache/pip,id=pip-cache-$TARGETARCH$TARGETVARIANT-final \
-    <<EOS
-set -ex
-apk add gcc libc-dev python3-dev libpq libpq-dev libjpeg-turbo libjpeg-turbo-dev zlib zlib-dev freetype freetype-dev supervisor openssl nginx curl unzip
-pip install -r /app/deploy/requirements.txt
-apk del gcc libc-dev python3-dev libpq-dev libjpeg-turbo-dev zlib-dev freetype-dev
-EOS
+    set -ex && \
+    apk add gcc libc-dev python3-dev libpq libpq-dev libjpeg-turbo libjpeg-turbo-dev zlib zlib-dev freetype freetype-dev supervisor openssl nginx curl unzip && \
+    pip install -r /app/deploy/requirements.txt && \
+    apk del gcc libc-dev python3-dev libpq-dev libjpeg-turbo-dev zlib-dev freetype-dev
 
-# Copiar código del backend
+# Copiar cÃ³digo del backend
 COPY ./OnlineJudge/ /app/
 
 # Copiar el frontend compilado desde la etapa 1
 COPY --from=frontend-builder --link /fe/dist/ /app/dist/
 
-RUN chmod -R u=rwX,go=rX ./ && chmod +x ./deploy/entrypoint.sh
+RUN sed -i 's/\r$//' ./deploy/entrypoint.sh && chmod -R u=rwX,go=rX ./ && chmod +x ./deploy/entrypoint.sh
 
 HEALTHCHECK --interval=5s CMD [ "/usr/local/bin/python3", "/app/deploy/health_check.py" ]
 EXPOSE 8000
