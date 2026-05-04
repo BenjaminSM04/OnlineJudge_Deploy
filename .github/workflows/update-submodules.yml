@@ -1,0 +1,37 @@
+name: Update Submodules Automatically
+
+on:
+  # Se ejecuta automáticamente todos los días a la medianoche (UTC)
+  schedule:
+    - cron: '0 0 * * *'
+  # Permite ejecutarlo manualmente desde la pestaña "Actions" en GitHub
+  workflow_dispatch:
+
+jobs:
+  update-submodules:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          # Usamos un fetch-depth 0 para asegurarnos de tener toda la historia git
+          fetch-depth: 0
+          
+      - name: Update submodules to latest tracked branch (main)
+        run: |
+          # Actualiza los submódulos basados en la rama configurada en .gitmodules (main)
+          git submodule update --remote --recursive
+          
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Añade los cambios y hace commit solo si hay modificaciones
+          git add OnlineJudge OnlineJudgeFE
+          git commit -m "chore: auto-update submodules to latest main" || echo "No changes to commit"
+          
+          # Sube los cambios al repositorio
+          git push
