@@ -11,6 +11,9 @@ RUN apk add --no-cache git
 
 WORKDIR /fe
 
+# Necesario para webpack 3 con Node 18+
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
 # Copiar archivos de dependencias primero (mejor uso de cache de Docker)
 COPY ./OnlineJudgeFE/package.json ./OnlineJudgeFE/package-lock.json* ./
 RUN npm install --legacy-peer-deps
