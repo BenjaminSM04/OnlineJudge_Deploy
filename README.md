@@ -1,4 +1,4 @@
-# 🏛️ LizardJudge — Online Judge | Universidad Privada del Valle
+# LizardJudge — Online Judge | Universidad Privada del Valle
 
 <div align="center">
 
@@ -15,19 +15,19 @@ Proyecto académico desarrollado para la materia de **Sistemas II** — Universi
 
 ---
 
-## 📋 Descripción
+## Descripción
 
 LizardJudge es una plataforma web de tipo **Online Judge** que permite a estudiantes y docentes:
 
-- 📝 **Crear y gestionar problemas** de programación con casos de prueba automáticos.
-- ⚡ **Enviar soluciones** en múltiples lenguajes de programación.
-- ✅ **Evaluación automática** con retroalimentación instantánea (Accepted, Wrong Answer, Time Limit, etc.).
-- 🏆 **Rankings y concursos** con soporte para modalidades ACM/ICPC y OI.
-- 👥 **Panel de administración** completo para gestión de usuarios, problemas y concursos.
+- **Crear y gestionar problemas** de programación con casos de prueba automáticos.
+- **Enviar soluciones** en múltiples lenguajes de programación.
+- **Evaluación automática** con retroalimentación instantánea (Accepted, Wrong Answer, Time Limit, etc.).
+- **Rankings y concursos** con soporte para modalidades ACM/ICPC y OI.
+- **Panel de administración** completo para gestión de usuarios, problemas y concursos.
 
 ---
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
 
@@ -63,7 +63,7 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
 
 ---
 
-## 🚀 Instalación y Ejecución
+## Instalación y Ejecución
 
 ### Requisitos previos
 
@@ -107,11 +107,11 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
    - **Usuario:** `root`
    - **Contraseña:** `rootroot`
 
-   > ⚠️ **Cambiar la contraseña del administrador después del primer inicio de sesión.**
+   > **Cambiar la contraseña del administrador después del primer inicio de sesión.**
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 OnlineJudgeDeploy/
@@ -121,7 +121,7 @@ OnlineJudgeDeploy/
 ├── .gitignore
 ├── README.md
 │
-├── OnlineJudge/            # 🔧 Backend (Python/Django)
+├── OnlineJudge/            # Backend (Python/Django)
 │   ├── account/            # Módulo de autenticación
 │   ├── announcement/       # Módulo de anuncios
 │   ├── contest/            # Módulo de concursos
@@ -132,13 +132,13 @@ OnlineJudgeDeploy/
 │   ├── oj/                 # Configuración principal de Django
 │   └── manage.py
 │
-├── OnlineJudgeFE/          # 🎨 Frontend (Vue.js 2)
+├── OnlineJudgeFE/          # Frontend (Vue.js 2)
 │   ├── src/                # Código fuente
 │   ├── build/              # Scripts de Webpack
 │   ├── config/             # Configuración de entornos
 │   └── package.json
 │
-└── data/                   # 📦 Datos persistentes (generado por Docker, no se sube)
+└── data/                   # Datos persistentes (generado por Docker, no se sube)
     ├── backend/
     ├── postgres/
     └── redis/
@@ -146,7 +146,7 @@ OnlineJudgeDeploy/
 
 ---
 
-## 🛠️ Comandos útiles
+## Comandos útiles
 
 ```bash
 # Levantar servicios
@@ -170,7 +170,7 @@ docker-compose up -d --build oj-backend
 
 ---
 
-## 👥 Equipo
+## Equipo
 
 | Rol | Nombre |
 |-----|--------|
@@ -180,12 +180,12 @@ docker-compose up -d --build oj-backend
 
 ---
 
-## 📚 Basado en
+## Basado en
 
 Este proyecto está basado en [QingdaoU/OnlineJudge](https://github.com/QingdaoU/OnlineJudge), una plataforma de juez en línea de código abierto, adaptada y personalizada para uso académico en UNIVALLE.
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto es de uso académico. El código base original está bajo la licencia [MIT](https://opensource.org/licenses/MIT).
