@@ -3,5 +3,11 @@
 **/.venv
 **/.vscode
 **/data
+!OnlineJudge/data/
+!OnlineJudge/data/public/
+!OnlineJudge/data/public/avatar/
+!OnlineJudge/data/public/avatar/default.png
+!OnlineJudge/data/public/website/
+!OnlineJudge/data/public/website/favicon.ico
 **/__pycache__
 **/*.pyc

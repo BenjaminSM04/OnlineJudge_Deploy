@@ -59,7 +59,7 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
 | **oj-backend** | Python 3.12 / Django / Nginx | API REST + serve del frontend compilado |
 | **oj-judge** | C/C++ Sandbox | Ejecuta y evalúa las soluciones de forma segura |
 | **oj-postgres** | PostgreSQL 10 | Base de datos relacional |
-| **oj-redis** | Redis 4 | Caché y cola de tareas |
+| **oj-redis** | Redis 7 | Caché y cola de tareas |
 
 ---
 
