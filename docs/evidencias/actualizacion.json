@@ -1,0 +1,13 @@
+{
+  "legacy_backend": "72fc56327644e8a48e350c40a383a7949b984217",
+  "application_tables_checked": 21,
+  "original_columns_preserved": true,
+  "key_preserved": true,
+  "legacy_session_preserved": true,
+  "historical_achievement_count": 1,
+  "redis_restored_on_new_volume": true,
+  "redis_backup_sha256": "d385f0000fc06ee573592c263589a5c615d7a4daf0584fdbad574e25c0ddac2e",
+  "files_restored_on_new_volume": true,
+  "rollback_before_writes": "passed",
+  "production_access": false
+}

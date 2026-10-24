@@ -1,6 +1,8 @@
 name: Verifica integración y conservación de datos
 
 on:
+  push:
+    branches: [main, 'codex/**']
   pull_request:
   workflow_dispatch:
 
@@ -10,12 +12,62 @@ permissions:
 jobs:
   verificar:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Compila con el lockfile y el commit real del frontend
-        run: docker build --build-arg FRONTEND_COMMIT="$(git -C OnlineJudgeFE rev-parse HEAD)" -t lizardjudge-revision:local .
-      - name: Ensaya arranque, respaldo y restauración sin pérdida
-        run: python3 scripts/verify_deploy.py --project lizardjudge-verificacion-${{ github.run_id }}-${{ github.run_attempt }}
+          fetch-depth: 0
+      - name: Verifica integridad de artefactos y guard del motor
+        run: python3 scripts/test_tutor_engine.py
+      - name: Ensaya actualización desde el backend histórico sin pérdida
+        run: python3 scripts/verify_upgrade.py --project lizardjudge-upgrade-ci-${{ github.run_id }}-${{ github.run_attempt }} --keep-running
+      - name: Instala Chromium para el flujo HTTP e interfaz real
+        run: |
+          pip install playwright==1.64.0
+          python -m playwright install --with-deps chromium
+      - name: Verifica tutor, docente, mascota, tema y móvil
+        run: python3 scripts/verify_ui.py --project lizardjudge-upgrade-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Verifica protocolo y seis lenguajes del juez fijado
+        run: python3 scripts/verify_judge.py
+      - name: Verifica envíos desde navegador por la cola hasta el juez
+        run: python3 scripts/verify_submission_e2e.py --project lizardjudge-upgrade-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Mide respaldo bajo carga local y comprueba cuotas
+        run: python3 scripts/load_test_ai_tutor.py --project lizardjudge-upgrade-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Comprueba el motor real sin artefactos aprobados
+        run: python3 scripts/verify_engine_unavailable.py
+      - name: Audita la imagen candidata completa
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/respaldos/runtime:/reports" aquasec/trivy:0.75.0 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --format json --output /reports/image-audit.json lizardjudge-sprints:local
+      - name: Publica imágenes por SHA sin operar el alojamiento
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "$GH_TOKEN" | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+          destination="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lizardjudge:sha-${GITHUB_SHA}"
+          docker tag lizardjudge-sprints:local "$destination"
+          docker push "$destination" | tee respaldos/runtime/imagen-publicada.txt
+          engine="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lizardjudge-tutor:sha-${GITHUB_SHA}"
+          docker tag lizardjudge-tutor:local "$engine"
+          docker push "$engine" | tee respaldos/runtime/motor-publicado.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencia-integracion
+          path: |
+            respaldos/**/upgrade-result.json
+            respaldos/runtime/ui/
+            respaldos/runtime/judge-protocol.json
+            respaldos/runtime/submission-e2e.json
+            respaldos/runtime/submission-e2e.png
+            respaldos/runtime/load-fallback.json
+            respaldos/runtime/image-audit.json
+            respaldos/runtime/*publicad*.txt
+      - name: Detiene únicamente el ensayo de este runner
+        if: always()
+        run: docker compose -p lizardjudge-upgrade-ci-${{ github.run_id }}-${{ github.run_attempt }} -f compose.upgrade-verify.yml stop

@@ -1,0 +1,85 @@
+{
+  "project": "lizardjudge-upgrade-20261023-c",
+  "browser": "Chromium",
+  "production_access": false,
+  "judge_execution": false,
+  "model_inference": false,
+  "page_errors": [],
+  "results": [
+    {
+      "flow": "explain-hints123-concept-rating",
+      "feedback": 5,
+      "synthetic_verdicts": true
+    },
+    {
+      "flow": "mascot-unlocks-persistence-reduced-motion",
+      "passed": true
+    },
+    {
+      "route": "/",
+      "width": 320,
+      "scroll": 320,
+      "theme": "dark"
+    },
+    {
+      "route": "/problem/UI-90a11e6a9b",
+      "width": 320,
+      "scroll": 320,
+      "theme": "dark"
+    },
+    {
+      "route": "/setting/profile",
+      "width": 320,
+      "scroll": 320,
+      "theme": "dark"
+    },
+    {
+      "route": "/",
+      "width": 375,
+      "scroll": 375,
+      "theme": "dark"
+    },
+    {
+      "route": "/problem/UI-90a11e6a9b",
+      "width": 375,
+      "scroll": 375,
+      "theme": "dark"
+    },
+    {
+      "route": "/setting/profile",
+      "width": 375,
+      "scroll": 375,
+      "theme": "dark"
+    },
+    {
+      "route": "/",
+      "width": 1280,
+      "scroll": 1280,
+      "theme": "dark"
+    },
+    {
+      "route": "/problem/UI-90a11e6a9b",
+      "width": 1280,
+      "scroll": 1280,
+      "theme": "dark"
+    },
+    {
+      "route": "/setting/profile",
+      "width": 1280,
+      "scroll": 1280,
+      "theme": "dark"
+    },
+    {
+      "flow": "teacher-draft-activation-existing-session-pinned",
+      "passed": true
+    },
+    {
+      "flow": "simditor-editor-upload-csrf-download-headers",
+      "passed": true
+    },
+    {
+      "flow": "csv-preview-without-import-and-csrf-denied",
+      "passed": true
+    }
+  ]
+}

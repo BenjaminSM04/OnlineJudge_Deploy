@@ -16,6 +16,7 @@ ENV NODE_OPTIONS=--openssl-legacy-provider
 
 # Copiar archivos de dependencias primero (mejor uso de cache de Docker)
 COPY ./OnlineJudgeFE/package.json ./OnlineJudgeFE/yarn.lock ./
+COPY ./OnlineJudgeFE/build/patch-legacy-dependencies.js ./build/
 RUN yarn install --frozen-lockfile --non-interactive
 
 # Copiar el código fuente del frontend y compilar.
@@ -32,11 +33,12 @@ RUN yarn test:tutor && yarn build:dll && yarn build
 FROM python:3.12-alpine
 ARG TARGETARCH
 ARG TARGETVARIANT
+ARG BACKEND_SOURCE=OnlineJudge
 
 ENV OJ_ENV=production
 WORKDIR /app
 
-COPY ./OnlineJudge/deploy/requirements.txt /app/deploy/
+COPY ${BACKEND_SOURCE}/deploy/requirements.txt /app/deploy/
 
 # Instalar dependencias del sistema y Python
 # psycopg2: libpq-dev
@@ -49,13 +51,19 @@ RUN --mount=type=cache,target=/etc/apk/cache,id=apk-cache-$TARGETARCH$TARGETVARI
     apk del gcc libc-dev python3-dev libpq-dev libjpeg-turbo-dev zlib-dev freetype-dev
 
 # Copiar el código del backend.
-COPY ./OnlineJudge/ /app/
+COPY ${BACKEND_SOURCE}/ /app/
 
 # Copiar el frontend compilado desde la etapa 1
 COPY --from=frontend-builder --link /fe/dist/ /app/dist/
 
 RUN sed -i 's/\r$//' ./deploy/entrypoint.sh && chmod -R u=rwX,go=rX ./ && chmod +x ./deploy/entrypoint.sh
 
+ARG BACKEND_COMMIT=local
+ARG FRONTEND_COMMIT=local
+ARG INTEGRATION_COMMIT=local
+LABEL org.opencontainers.image.revision=$INTEGRATION_COMMIT \
+      org.lizardjudge.backend.revision=$BACKEND_COMMIT \
+      org.lizardjudge.frontend.revision=$FRONTEND_COMMIT
 HEALTHCHECK --start-period=90s --interval=5s --timeout=5s --retries=5 CMD [ "/usr/local/bin/python3", "/app/deploy/health_check.py" ]
 EXPOSE 8000
 ENTRYPOINT [ "/app/deploy/entrypoint.sh" ]

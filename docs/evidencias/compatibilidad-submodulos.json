@@ -1,0 +1,12 @@
+{
+  "OnlineJudge": {
+    "repository": "BenjaminSM04/PS2B2026-JuezVirtual_Backend",
+    "sha": "d9cb562b4bb2ec60ab488d1a3de2616fb1444812",
+    "check": "https://github.com/BenjaminSM04/PS2B2026-JuezVirtual_Backend/actions/runs/40055909670/job/120758734057"
+  },
+  "OnlineJudgeFE": {
+    "repository": "BenjaminSM04/PS2B2026-JuezVirtual_frontend",
+    "sha": "1dd30ea8eb6aca57438740aa0429b17ed1e76530",
+    "check": "https://github.com/BenjaminSM04/PS2B2026-JuezVirtual_frontend/actions/runs/40055234030/job/120756658940"
+  }
+}

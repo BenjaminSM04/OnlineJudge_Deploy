@@ -15,5 +15,19 @@ services:
       interval: 3s
       timeout: 5s
       retries: 30
+  oj-postgres10:
+    profiles: [migracion]
+    image: postgres:10-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-onlinejudge}
+      POSTGRES_USER: ${POSTGRES_USER:-onlinejudge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Conserve la contraseña del despliegue en el entorno privado}
+    volumes:
+      - pgdata10:/var/lib/postgresql/data
 volumes:
   pgdata17:
+    external: true
+    name: ${OJ_PG17_VOLUME:?Seleccione un volumen nuevo separado}
+  pgdata10:
+    external: true
+    name: ${OJ_PG10_VOLUME:?Identifique el volumen histórico real; no se infiere}

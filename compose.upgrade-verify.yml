@@ -1,0 +1,77 @@
+services:
+  oj-postgres:
+    image: postgres:10-alpine
+    environment:
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD:
+    volumes: [pg10:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  oj-postgres17:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD:
+    volumes: [pg17:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  oj-redis:
+    image: redis:7-alpine
+    volumes: [redis:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  oj-legacy:
+    image: lizardjudge-legacy:verification
+    environment:
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD:
+      JUDGE_SERVER_TOKEN:
+      MAX_WORKER_NUM: '2'
+      OJ_VERIFICATION_ONLY: '1'
+    volumes: [backend:/data]
+    depends_on:
+      oj-postgres: {condition: service_healthy}
+      oj-redis: {condition: service_healthy}
+  oj-redis-restore:
+    image: redis:7-alpine
+    volumes: [redis-restored:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  oj-backend:
+    image: lizardjudge-sprints:local
+    environment:
+      POSTGRES_HOST: oj-postgres17
+      REDIS_HOST: oj-redis-restore
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD:
+      JUDGE_SERVER_TOKEN:
+      MAX_WORKER_NUM: '2'
+      OJ_VERIFICATION_ONLY: '1'
+    volumes: [backend-restored:/data]
+    ports: ['127.0.0.1:18082:8000']
+    depends_on:
+      oj-postgres17: {condition: service_healthy}
+      oj-redis-restore: {condition: service_healthy}
+volumes:
+  pg10:
+  pg17:
+  redis:
+  redis-restored:
+  backend:
+  backend-restored:

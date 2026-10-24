@@ -1,0 +1,15 @@
+{
+  "scope": "local-fallback-only",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "production_access": false,
+  "model_inference": false,
+  "concurrency": 4,
+  "completed": 24,
+  "quota_denials_verified": 4,
+  "seconds": 1.159,
+  "p50_ms": 102.83,
+  "p95_ms": 168.93,
+  "max_ms": 173.92,
+  "memory_sample_after_load": "281.5MiB / 7.71GiB",
+  "memory_peak": "not-measured"
+}

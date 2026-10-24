@@ -1,5 +1,10 @@
 # Evidencia de integración — 23 de octubre de 2026
 
+Este informe corresponde al primer corte de conservación (`46e0bec`/`bce42e1`).
+La entrega ampliada, sus pruebas y pendientes se registran en
+`continuidad-sprints.md`, `estado-sprints.md` y `actualizacion-django52-pg17.md`.
+Las versiones y cifras siguientes son históricas.
+
 Entorno local Docker, proyectos `lizardjudge-verificacion-20261023` y
 `lizardjudge-verificacion-final-20261023`. Datos exclusivamente sintéticos.
 El checkout de trabajo original y sus submódulos permanecen sin modificaciones;

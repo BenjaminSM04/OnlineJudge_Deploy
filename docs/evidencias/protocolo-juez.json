@@ -1,0 +1,140 @@
+{
+  "image": "registry.cn-hongkong.aliyuncs.com/oj-image/judge:1.6.1@sha256:2dd902870f5e6f69866aa339a6a98b6da9eb1693e2e9936dce23d73203151501",
+  "network": "none",
+  "root_readonly": true,
+  "synthetic_sources": true,
+  "results": [
+    {
+      "language": "C",
+      "passed": true,
+      "elapsed_ms": 281,
+      "response": {
+        "err": null,
+        "data": [
+          {
+            "cpu_time": 0,
+            "real_time": 1,
+            "memory": 1359872,
+            "signal": 0,
+            "exit_code": 0,
+            "error": 0,
+            "result": 0,
+            "test_case": "1",
+            "output_md5": "e4da3b7fbbce2345d7772b0674a318d5",
+            "output": null
+          }
+        ]
+      }
+    },
+    {
+      "language": "C++",
+      "passed": true,
+      "elapsed_ms": 654,
+      "response": {
+        "err": null,
+        "data": [
+          {
+            "cpu_time": 0,
+            "real_time": 2,
+            "memory": 3551232,
+            "signal": 0,
+            "exit_code": 0,
+            "error": 0,
+            "result": 0,
+            "test_case": "1",
+            "output_md5": "e4da3b7fbbce2345d7772b0674a318d5",
+            "output": null
+          }
+        ]
+      }
+    },
+    {
+      "language": "Java",
+      "passed": true,
+      "elapsed_ms": 988,
+      "response": {
+        "err": null,
+        "data": [
+          {
+            "cpu_time": 65,
+            "real_time": 81,
+            "memory": 42098688,
+            "signal": 0,
+            "exit_code": 0,
+            "error": 0,
+            "result": 0,
+            "test_case": "1",
+            "output_md5": "e4da3b7fbbce2345d7772b0674a318d5",
+            "output": null
+          }
+        ]
+      }
+    },
+    {
+      "language": "Python3",
+      "passed": true,
+      "elapsed_ms": 228,
+      "response": {
+        "err": null,
+        "data": [
+          {
+            "cpu_time": 7,
+            "real_time": 9,
+            "memory": 8056832,
+            "signal": 0,
+            "exit_code": 0,
+            "error": 0,
+            "result": 0,
+            "test_case": "1",
+            "output_md5": "e4da3b7fbbce2345d7772b0674a318d5",
+            "output": null
+          }
+        ]
+      }
+    },
+    {
+      "language": "Golang",
+      "passed": true,
+      "elapsed_ms": 10711,
+      "response": {
+        "err": null,
+        "data": [
+          {
+            "cpu_time": 0,
+            "real_time": 2,
+            "memory": 1687552,
+            "signal": 0,
+            "exit_code": 0,
+            "error": 0,
+            "result": 0,
+            "test_case": "1",
+            "output_md5": "e4da3b7fbbce2345d7772b0674a318d5",
+            "output": null
+          }
+        ]
+      }
+    },
+    {
+      "language": "JavaScript",
+      "passed": true,
+      "elapsed_ms": 354,
+      "response": {
+        "err": null,
+        "data": [
+          {
+            "cpu_time": 20,
+            "real_time": 28,
+            "memory": 40083456,
+            "signal": 0,
+            "exit_code": 0,
+            "error": 0,
+            "result": 0,
+            "test_case": "1",
+            "output_md5": "e4da3b7fbbce2345d7772b0674a318d5",
+            "output": null
+          }
+        ]
+      }
+    }
+  ]
+}

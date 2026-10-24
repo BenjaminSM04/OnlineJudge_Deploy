@@ -20,13 +20,12 @@ con Yarn Classic `--frozen-lockfile`, ejecuta las ocho pruebas existentes de
 componentes/navegación y compila ambas entradas. `FRONTEND_COMMIT` permite incluir
 el commit real sin fabricar un repositorio Git en la imagen.
 
-El backend actual sigue fijado en Django 3.2.25 y el Compose habitual conserva
-PostgreSQL 10 y el volumen `pgdata`. **Esta entrega no completa la actualización
-a Django 5.2 ni habilita PostgreSQL 17 para la aplicación.** Django 3.2 ya no
-tiene soporte y su matriz oficial no incluye Python 3.12; que el ensayo local
-funcione no resuelve esa deuda. La actualización coordinada y sus pruebas de
-regresión siguen pendientes. Véase la
-[matriz oficial de Django](https://docs.djangoproject.com/en/3.2/faq/install/).
+El backend se actualizó a Django 5.2/Python 3.12 y PostgreSQL 17. El Compose exige
+un volumen externo PG17 preparado; conserva la definición del volumen histórico.
+**Antes de actualizar una instalación existente**, seguir
+[el procedimiento de migración y reversión](actualizacion-django52-pg17.md).
+El ensayo histórico anterior queda como evidencia de su versión, no como guía
+vigente para ejecutar Django 5.2 sobre PostgreSQL 10.
 
 El arranque deja de crear administradores con contraseña conocida. Los usuarios
 existentes no se eliminan ni se reinician sus contraseñas. Para una instalación

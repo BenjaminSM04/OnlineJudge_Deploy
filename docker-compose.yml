@@ -1,4 +1,3 @@
-version: "3"
 services:
 
   oj-redis:
@@ -8,17 +7,22 @@ services:
       - ./data/redis:/data
 
   oj-postgres:
-    image: postgres:10-alpine
+    image: postgres:17-alpine
     restart: always
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata17:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=onlinejudge
-      - POSTGRES_USER=onlinejudge
-      - POSTGRES_PASSWORD=onlinejudge
+      POSTGRES_DB: ${POSTGRES_DB:-onlinejudge}
+      POSTGRES_USER: ${POSTGRES_USER:-onlinejudge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Conserve la contraseña vigente en el entorno privado}
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 30
 
   oj-judge:
-    image: registry.cn-hongkong.aliyuncs.com/oj-image/judge:1.6.1
+    image: registry.cn-hongkong.aliyuncs.com/oj-image/judge:1.6.1@sha256:2dd902870f5e6f69866aa339a6a98b6da9eb1693e2e9936dce23d73203151501
     restart: always
     read_only: true
     cap_drop:
@@ -37,7 +41,7 @@ services:
     environment:
       - SERVICE_URL=http://oj-judge:8080
       - BACKEND_URL=http://oj-backend:8000/api/judge_server_heartbeat/
-      - TOKEN=CHANGE_THIS
+      - TOKEN=${JUDGE_SERVER_TOKEN:?Conserve el token vigente en el entorno privado}
       # - judger_debug=1
 
   oj-backend:
@@ -47,16 +51,20 @@ services:
     image: oj-backend:local
     restart: always
     depends_on:
-      - oj-redis
-      - oj-postgres
-      - oj-judge
+      oj-redis: {condition: service_started}
+      oj-postgres: {condition: service_healthy}
+      oj-judge: {condition: service_started}
     volumes:
       - ./data/backend:/data
     environment:
-      - POSTGRES_DB=onlinejudge
-      - POSTGRES_USER=onlinejudge
-      - POSTGRES_PASSWORD=onlinejudge
-      - JUDGE_SERVER_TOKEN=CHANGE_THIS
+      - POSTGRES_DB=${POSTGRES_DB:-onlinejudge}
+      - POSTGRES_USER=${POSTGRES_USER:-onlinejudge}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Conserve la contraseña vigente en el entorno privado}
+      - JUDGE_SERVER_TOKEN=${JUDGE_SERVER_TOKEN:?Conserve el token vigente en el entorno privado}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:?Defina los hosts públicos y localhost sin comodines}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-}
+      - COOKIE_SECURE=${COOKIE_SECURE:-1}
+      - TRUST_PROXY_HTTPS=${TRUST_PROXY_HTTPS:-0}
       # - FORCE_HTTPS=1
       # - STATIC_CDN_HOST=cdn.oj.com
     ports:
@@ -64,4 +72,8 @@ services:
       - "0.0.0.0:443:1443"
 
 volumes:
+  # Se conserva la definición histórica; nunca se conecta PostgreSQL 17 a ella.
   pgdata:
+  pgdata17:
+    external: true
+    name: ${OJ_PG17_VOLUME:?Seleccione explícitamente el volumen nuevo restaurado y verificado}

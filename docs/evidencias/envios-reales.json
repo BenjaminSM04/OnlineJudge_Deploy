@@ -1,0 +1,40 @@
+{
+  "image": "registry.cn-hongkong.aliyuncs.com/oj-image/judge:1.6.1@sha256:2dd902870f5e6f69866aa339a6a98b6da9eb1693e2e9936dce23d73203151501",
+  "judge_network_internal": true,
+  "browser_to_api_queue_judge": true,
+  "synthetic_problem": true,
+  "verdicts_seeded": false,
+  "unique_achievement_count": 1,
+  "results": [
+    {
+      "language": "C",
+      "result": 0,
+      "elapsed_ms": 1159
+    },
+    {
+      "language": "C++",
+      "result": 0,
+      "elapsed_ms": 1157
+    },
+    {
+      "language": "Java",
+      "result": 0,
+      "elapsed_ms": 1142
+    },
+    {
+      "language": "Python3",
+      "result": 0,
+      "elapsed_ms": 1155
+    },
+    {
+      "language": "Golang",
+      "result": 0,
+      "elapsed_ms": 10516
+    },
+    {
+      "language": "JavaScript",
+      "result": 0,
+      "elapsed_ms": 1198
+    }
+  ]
+}
