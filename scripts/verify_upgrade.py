@@ -15,16 +15,36 @@ sys.path.insert(0, str(ROOT / "backup"))
 from database import Database, identifier  # noqa: E402
 
 LEGACY = "72fc56327644e8a48e350c40a383a7949b984217"
+# Migraciones JSON de la rama nueva; en historias previas pueden existir con otro nombre.
+JSON_MIGRATIONS = [("account", "0014_alter_user_session_keys_and_more"),
+                   ("contest", "0011_alter_acmcontestrank_submission_info_and_more"),
+                   ("options", "0004_alter_sysoptions_value"),
+                   ("problem", "0016_alter_problem_io_mode_alter_problem_languages_and_more"),
+                   ("submission", "0013_alter_submission_info_and_more")]
 
 
 def run(command, **kwargs):
     return subprocess.run(command, cwd=ROOT, check=True, **kwargs)
 
 
-def export_legacy():
-    path = ROOT / ".verification/legacy-backend"
-    git = ["git", "-c", "safe.directory=" + str(ROOT / "OnlineJudge"), "-C", str(ROOT / "OnlineJudge")]
-    archive = subprocess.check_output(git + ["archive", "--format=tar", LEGACY])
+def backend_git():
+    return ["git", "-c", "safe.directory=" + str(ROOT / "OnlineJudge"), "-C", str(ROOT / "OnlineJudge")]
+
+
+def legacy_directory(sha):
+    """El histórico por defecto conserva su ruta; otro SHA usa un directorio propio."""
+    return ROOT / ".verification" / ("legacy-backend" if sha == LEGACY else "legacy-backend-" + sha[:12])
+
+
+def standalone_backend(path):
+    """Backends con Dockerfile y paso `migrate` explícito (entrega/main) se construyen con el suyo."""
+    entrypoint = path / "deploy/entrypoint.sh"
+    return (path / "Dockerfile").is_file() and entrypoint.is_file() and "migrate)" in entrypoint.read_text(encoding="utf-8")
+
+
+def export_legacy(sha):
+    path = legacy_directory(sha)
+    archive = subprocess.check_output(backend_git() + ["archive", "--format=tar", sha])
     if path.exists():
         with tarfile.open(fileobj=BytesIO(archive)) as files:
             for item in files:
@@ -66,11 +86,39 @@ def original_fields(database, columns=None):
     return result
 
 
+def migrations(database):
+    return database.sql("SELECT app || '.' || name FROM django_migrations ORDER BY app, name")
+
+
+def column_types(database, originals):
+    """Tipo, nulabilidad y valor por defecto de las columnas originales."""
+    result = {}
+    for name, info in originals.items():
+        schema, table = name[1:-1].split('"."')
+        rows = database.sql("SELECT json_build_array(column_name, data_type, is_nullable, column_default) FROM information_schema.columns "
+                            "WHERE table_schema='" + schema.replace("'", "''") + "' AND table_name='" + table.replace("'", "''") + "' ORDER BY column_name")
+        result[name] = [item for item in map(json.loads, rows) if item[0] in info["columns"]]
+    return result
+
+
+def manage(compose, service, *arguments):
+    result = run(compose + ["exec", "-T", service, "python", "manage.py"] + list(arguments), stdout=subprocess.PIPE, encoding="utf-8")
+    return result.stdout
+
+
+def effective_sql(output):
+    """SQL ejecutable de `sqlmigrate`, sin comentarios, transacción ni el aviso de versión de la aplicación."""
+    lines = [line.strip() for line in output.splitlines()]
+    return [line for line in lines if line and not line.startswith(("--", "Django VERSION")) and line.upper() not in {"BEGIN;", "COMMIT;"}]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", required=True)
     parser.add_argument("--keep-running", action="store_true")
     parser.add_argument("--skip-build", action="store_true")
+    parser.add_argument("--legacy-sha", default=LEGACY, help="Commit del backend de partida disponible en el submódulo OnlineJudge.")
+    parser.add_argument("--port", type=int, default=18082, help="Puerto loopback de la interfaz de ensayo.")
     args = parser.parse_args()
     if not args.project.startswith("lizardjudge-upgrade-"):
         parser.error("Use un nombre nuevo con prefijo lizardjudge-upgrade-.")
@@ -81,14 +129,27 @@ def main():
     existing = subprocess.check_output(["docker", "ps", "-aq", "--filter", "label=com.docker.compose.project=" + args.project], text=True).strip()
     if existing:
         raise ValueError("El proyecto ya existe. Use otro nombre; se conservan sus datos.")
-    export_legacy()
+    legacy = subprocess.check_output(backend_git() + ["rev-parse", "--verify", args.legacy_sha + "^{commit}"], text=True).strip()
+    custom = legacy != LEGACY
+    legacy_image, backend_image = "lizardjudge-legacy:verification", "lizardjudge-sprints:local"
+    if custom:
+        # Etiquetas propias: no se reemplazan las imágenes de otros ensayos.
+        legacy_image, backend_image = "lizardjudge-legacy:verification-" + legacy[:12], "lizardjudge-sprints:verification-" + legacy[:12]
+    os.environ.update(OJ_LEGACY_IMAGE=legacy_image, OJ_BACKEND_IMAGE=backend_image, OJ_VERIFY_PORT=str(args.port))
+    export_legacy(legacy)
+    legacy_path = legacy_directory(legacy)
+    standalone = standalone_backend(legacy_path)
     frontend = subprocess.check_output(["git", "-c", "safe.directory=" + str(ROOT / "OnlineJudgeFE"), "-C", str(ROOT / "OnlineJudgeFE"), "rev-parse", "HEAD"], text=True).strip()
     if not args.skip_build:
         backend_sha = subprocess.check_output(["git", "-C", str(ROOT / "OnlineJudge"), "rev-parse", "HEAD"], text=True).strip()
         root_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         common = ["docker", "build", "--build-arg", "FRONTEND_COMMIT=" + frontend, "--build-arg", "INTEGRATION_COMMIT=" + root_sha]
-        run(common + ["--build-arg", "BACKEND_COMMIT=" + backend_sha, "-t", "lizardjudge-sprints:local", "."])
-        run(common + ["--build-arg", "BACKEND_COMMIT=" + LEGACY, "--build-arg", "BACKEND_SOURCE=.verification/legacy-backend", "-t", "lizardjudge-legacy:verification", "."])
+        run(common + ["--build-arg", "BACKEND_COMMIT=" + backend_sha, "-t", backend_image, "."])
+        if standalone:
+            # Su propio Dockerfile (otra base, requisitos, prepare.py y entrypoint con `serve`/`migrate`).
+            run(["docker", "build", "--target", "production", "--build-arg", "APP_REVISION=" + legacy, "-t", legacy_image, str(legacy_path)])
+        else:
+            run(common + ["--build-arg", "BACKEND_COMMIT=" + legacy, "--build-arg", "BACKEND_SOURCE=" + legacy_path.relative_to(ROOT).as_posix(), "-t", legacy_image, "."])
     directory = ROOT / "respaldos" / args.project
     dbargs = ["--project", args.project, "--compose-file", compose_file, "--directory", str(directory), "--writers-stopped"]
     source, target = Database(compose, "oj-postgres"), Database(compose, "oj-postgres17")
@@ -97,6 +158,9 @@ def main():
         run(compose + ["up", "-d", "--wait", "oj-postgres", "oj-postgres17", "oj-redis"])
         if source.tables() or target.tables():
             raise ValueError("El ensayo requiere bases nuevas; se conservan los volúmenes existentes.")
+        if standalone:
+            # Su `serve` exige el esquema ya migrado: el paso explícito `migrate` lo crea antes.
+            run(compose + ["run", "-T", "--rm", "--no-deps", "oj-legacy", "migrate"])
         run(compose + ["up", "-d", "--wait", "--wait-timeout", "150", "oj-legacy"])
         seed = '''
 import os, json, secrets, hashlib
@@ -107,30 +171,35 @@ from problem.tests import DEFAULT_PROBLEM_DATA, ProblemCreateTestBase
 from contest.tests import DEFAULT_CONTEST_DATA
 from contest.models import Contest
 from submission.models import Submission
-from ai_tutor.models import TutorSession, TutorAttempt
-from ai_tutor.tests.config_factory import create_active_config
+try:
+    from ai_tutor.models import TutorSession, TutorAttempt
+    from ai_tutor.tests.config_factory import create_active_config
+except ImportError:  # Backends anteriores al tutor no tienen la aplicación.
+    TutorSession = None
 from django.contrib.sessions.backends.cache import SessionStore
 from django.core.cache import cache
 from django.db import connection
-assert User.objects.count() == 1
+base_users = User.objects.count()
 user = User(username="ensayo-historico", admin_type=AdminType.SUPER_ADMIN, problem_permission=ProblemPermission.ALL)
 user.set_password(secrets.token_urlsafe(32)); user.save()
 UserProfile.objects.create(user=user, language="es-LA")
 problem = ProblemCreateTestBase.add_problem(dict(DEFAULT_PROBLEM_DATA, _id="UPGRADE-1"), user)
-version = create_active_config(problem, user)
-session = TutorSession.objects.create(user=user, problem=problem, config_version=version)
 submission = Submission.objects.create(user_id=user.id, username=user.username, problem=problem, code="print(2)\\n", language="Python3", result=0)
-TutorAttempt.objects.create(session=session, submission=submission, language=submission.language, result=0)
+if TutorSession is not None:
+    version = create_active_config(problem, user)
+    session = TutorSession.objects.create(user=user, problem=problem, config_version=version)
+    TutorAttempt.objects.create(session=session, submission=submission, language=submission.language, result=0)
 contest = Contest.objects.create(created_by=user, **DEFAULT_CONTEST_DATA)
 contest_problem = ProblemCreateTestBase.add_problem(dict(DEFAULT_PROBLEM_DATA, _id="UPGRADE-C", contest=contest), user)
 Submission.objects.create(user_id=user.id, username=user.username, problem=contest_problem, contest=contest, code="print(2)", language="Python3", result=0)
 store = SessionStore(); store["_auth_user_id"] = str(user.id); store["_auth_user_backend"] = "django.contrib.auth.backends.ModelBackend"; store["_auth_user_hash"] = user.get_session_auth_hash(); store.save()
 user.session_keys = [store.session_key]; user.save()
 cache.set("upgrade-session-id", store.session_key)
+cache.set("upgrade-users", base_users + 1)
 Path("/data/public/upload/conservacion.txt").write_text("Archivo de ensayo.\\n", encoding="utf-8")
 with connection.cursor() as cursor:
     cursor.execute("SELECT lo_from_bytea(0, %s)", [b"objeto-grande-publico-de-ensayo"])
-print(json.dumps({"user_id": user.id, "key_sha256": hashlib.sha256(Path("/data/config/secret.key").read_bytes()).hexdigest()}))
+print(json.dumps({"user_id": user.id, "users": base_users + 1, "key_sha256": hashlib.sha256(Path("/data/config/secret.key").read_bytes()).hexdigest()}))
 '''
         before = app(compose, "oj-legacy", seed)
         run(compose + ["stop", "oj-legacy"])
@@ -152,10 +221,13 @@ print(json.dumps({"user_id": user.id, "key_sha256": hashlib.sha256(Path("/data/c
             with dump.open("r+b") as stream:
                 stream.truncate(length)
         assert original_fields(target, originals) == originals, "Cambió una columna de aplicación durante la restauración."
+        migrations_before = migrations(source)
+        assert migrations(target) == migrations_before, "La restauración cambió django_migrations."
+        types_before = column_types(target, originals)
         # Ensayo de reversión previo a abrir escrituras: la aplicación anterior sigue saludable sobre 10.
         run(compose + ["up", "-d", "--wait", "--wait-timeout", "120", "oj-legacy"])
         rollback = app(compose, "oj-legacy", 'from account.models import User; import json; print(json.dumps({"users": User.objects.count()}))')
-        assert rollback["users"] == 2
+        assert rollback["users"] == before["users"]
         run(compose + ["stop", "oj-legacy"])
         assert original_fields(source) == originals, "El ensayo alteró el origen."
         # Redis se restaura en otro volumen: conservar la clave Django por sí sola
@@ -189,19 +261,42 @@ key = cache.get("upgrade-session-id"); assert key
 client = Client(); client.cookies["sessionid"] = key
 response = client.get("/api/profile")
 assert response.status_code == 200 and response.data["data"]["user"]["username"] == "ensayo-historico"
-assert User.objects.count() == 2 and Achievement.objects.count() == 1
+assert User.objects.count() == cache.get("upgrade-users") and Achievement.objects.count() == 1
 assert Path("/data/public/upload/conservacion.txt").read_text(encoding="utf-8") == "Archivo de ensayo.\\n"
 print(json.dumps({"key_sha256": hashlib.sha256(Path("/data/config/secret.key").read_bytes()).hexdigest(), "achievements": Achievement.objects.count()}))
 ''')
         assert before["key_sha256"] == after["key_sha256"]
+        migrations_after = migrations(target)
+        assert not set(migrations_before) - set(migrations_after), "Se perdieron filas de django_migrations."
+        applied = {tuple(item.split(".", 1)) for item in migrations_after}
+        assert set(JSON_MIGRATIONS) <= applied, "Faltan migraciones JSON de la rama nueva."
+        assert column_types(target, originals) == types_before, "Cambió el tipo de una columna original."
+        plan = manage(compose, "oj-backend", "showmigrations", "--plan")
+        pending = [line for line in plan.splitlines() if line.startswith("[ ]")]
+        assert not pending, "Hay migraciones pendientes tras migrar: " + ", ".join(pending)
+        run(compose + ["exec", "-T", "oj-backend", "python", "manage.py", "migrate", "--check"])
+        # Las migraciones heredadas con otro nombre (`*_campos_json_nativos`) ya hicieron este cambio: no debe quedar SQL.
+        equivalent = any(item.endswith("_campos_json_nativos") for item in migrations_before)
+        json_sql = {}
+        for app_label, name in JSON_MIGRATIONS:
+            statements = effective_sql(manage(compose, "oj-backend", "sqlmigrate", app_label, name))
+            json_sql[app_label + "." + name] = {"effective_statements": statements, "noop": not statements}
+            assert not (equivalent and statements), "Una migración JSON equivalente emitió SQL: " + app_label + "." + name
         run(compose + ["exec", "-T", "oj-backend", "python", "manage.py", "check"])
         run(compose + ["exec", "-T", "oj-backend", "python", "manage.py", "makemigrations", "--check", "--dry-run"])
         run(compose + ["exec", "-T", "oj-backend", "python", "manage.py", "test", "--settings=oj.test_settings", "--noinput", "--verbosity", "0"])
-        report = {"legacy_backend": LEGACY, "application_tables_checked": len(originals), "original_columns_preserved": True,
+        report = {"legacy_backend": legacy, "application_tables_checked": len(originals), "original_columns_preserved": True,
                   "key_preserved": True, "legacy_session_preserved": True, "historical_achievement_count": after["achievements"],
                   "redis_restored_on_new_volume": True, "redis_backup_sha256": redis_digest,
                   "files_restored_on_new_volume": True,
-                  "rollback_before_writes": "passed", "production_access": False}
+                  "rollback_before_writes": "passed", "production_access": False,
+                  "legacy_built_with": "dockerfile propio del backend" if standalone else "Dockerfile de integración",
+                  "table_counts": {name: info["count"] for name, info in originals.items()},
+                  "original_column_types_preserved": True,
+                  "django_migrations_before": migrations_before, "django_migrations_after": migrations_after,
+                  "django_migrations_added": sorted(set(migrations_after) - set(migrations_before)),
+                  "pending_migrations_after": pending, "migrate_check": "passed",
+                  "json_migrations_equivalent_in_history": equivalent, "json_migrations_sql": json_sql}
         (directory / "upgrade-result.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
         print("OK: actualización con datos, clave, sesión y archivos conservados; reconciliación histórica y reversión verificadas.")
         success = True

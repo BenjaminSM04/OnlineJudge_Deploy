@@ -34,7 +34,7 @@ PR backend #38, frontend #123, integración #3, en los repositorios originales.
 | PB-23 | 9 | 5 | SamuelVicente937 | Conceptos y explicaciones fijados a versión; UI docente/alumno. Implementado y probado. |
 | PB-26 | 9 | 5 | BenjaminSM04 | Respaldo determinista/estático, circuito, límites de tamaño y presupuesto total. Implementado y probado. |
 | PB-27 | 9 | 3 | BenjaminCalle1233 | Métricas únicas, agregados p50/p95/utilidad/versiones y purga dry-run de 90 días. Implementado y probado. |
-| PB-28 | 10 | 8 | BenjaminSM04, BenjaminCalle1233 | Suite, Chromium, migración/recuperación, juez y carga local; faltan hardware objetivo, modelo real y aprobación del reporte. |
+| PB-28 | 10 | 8 | BenjaminSM04, BenjaminCalle1233 | Suite, Chromium, migración/recuperación, juez y carga repetidos en el runner de CI (`evidencias/ci-integracion.json`); publicación GHCR bloqueada por permiso del paquete; faltan hardware objetivo, modelo real y aprobación del reporte. |
 | PB-29 | 10 | 5 | Auza056 | Protocolo/instrumentos y resultados explícitamente vacíos. Piloto no ejecutado; requiere autorización y consentimiento. |
 | PB-30 | 10 | 3 | SamuelVicente937 | Guías de actualización/recuperación/uso/riesgos y ensayo aislado. Falta revisión de otro integrante e instalación por operador. |
 

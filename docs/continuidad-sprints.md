@@ -29,9 +29,50 @@ deploy `codex/integracion-conservacion`. PR 38/123/3; no merge ni alojamiento.
   `scripts/test_tutor_engine.py` y suite Django.
 
 Ensayo real navegador→cola→juez aprobado en seis lenguajes y un logro único.
-Restante inmediato: publicar integración con gitlinks exactos, esperar CI/GHCR, actualizar evidencia
-de las 30 historias sin marcar aprobaciones inexistentes. Matriz en
-`estado-sprints.md`; pendientes humanos/modelo/hardware/piloto permanecen explícitos.
+
+CI de integración `c50e136` (gitlinks exactos d9cb562/1dd30ea), detalle en
+`evidencias/ci-integracion.json`:
+
+- Ejecución PR 40056198026 aprobada en el runner: 242 pruebas sobre PG17, migración
+  histórica con 21 tablas/archivos/Redis/clave/sesión y rollback previo a escrituras,
+  14 comprobaciones Chromium, seis lenguajes del juez, seis envíos reales AC,
+  fallback p95 106 ms (sin modelo), Trivy HIGH/CRITICAL 0 y motor 503 sin artefactos.
+- Ejecución push 40056195214: las mismas verificaciones pasaron, pero **GHCR rechazó
+  el manifiesto** (`denied`) de `ghcr.io/benjaminsm04/lizardjudge`. El paquete ya
+  existía, vacío y sin acceso de escritura para Actions de este repositorio.
+  **No hay imágenes publicadas** ni servidor desplegado. Acción del dueño: en
+  Package settings → Manage Actions access, conceder Write a `OnlineJudge_Deploy`
+  (o eliminar el paquete vacío) y volver a ejecutar el job fallido. El Action de
+  sincronización publica en el mismo paquete y necesita el mismo permiso.
+
+Restante inmediato: permiso GHCR y nueva ejecución del job push; reconciliar el
+historial de migraciones de la instalación real antes de cualquier despliegue
+(ver sección siguiente). Matriz en `estado-sprints.md`; pendientes humanos/
+modelo/hardware/piloto permanecen explícitos.
+
+## Hacia la instalación real (Coolify) sin perder datos
+
+El backend #38 se fusionó en `main` (`e8e2f7b`, mismo árbol que `d9cb562`); su
+rama se eliminó. El servidor sigue usando los repositorios privados de entrega y
+no depende de estos repos públicos. Análisis local de solo lectura (no publicado,
+porque contiene detalles privados) del historial de migraciones privado frente al
+nuevo:
+
+- El grafo es compatible: Django ignora filas aplicadas que no conoce, hay una sola
+  hoja por app y no aparece `InconsistentMigrationHistory`. Cinco migraciones de
+  campos JSON tienen nombres distintos y operaciones idénticas: sobre columnas ya
+  `jsonb` no emiten SQL efectivo. `ai_tutor` y `practice` solo crean tablas nuevas.
+  No renombrar ni copiar migraciones ni editar `django_migrations` a mano.
+- Riesgos reales, fuera del grafo: Django 5.2 exige PostgreSQL ≥ 14 (confirmar la
+  versión instalada y, si es menor, usar la transición PG17 de este repositorio);
+  nombres de variables y booleanos de entorno, healthcheck y argumentos del
+  entrypoint esperados por la configuración privada; correcciones funcionales que
+  existen solo en la rama privada (p. ej. dificultad en importación/exportación
+  QDUOJ) y deben integrarse por su propio PR en el repositorio que corresponda.
+- Antes de cualquier ventana: copia real restaurada en un entorno aislado,
+  `showmigrations`, `migrate --plan`, `sqlmigrate` de las migraciones JSON,
+  `migrate` dos veces, recuentos por tabla y rollback a la imagen anterior antes
+  de abrir escrituras. El operador decide la procedencia que despliega.
 
 Decisión: se conserva este registro y las ramas ya autorizadas como plan de trabajo,
 sin recrear worktrees ni pedir otra autorización para publicar las mismas ramas.

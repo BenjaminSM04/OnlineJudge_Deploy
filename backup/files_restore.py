@@ -11,6 +11,7 @@ def main():
     parser.add_argument("--source-container", required=True)
     parser.add_argument("--target-volume", required=True)
     parser.add_argument("--archive", required=True, type=Path)
+    parser.add_argument("--user", default="0:0", help="Usuario de restauración; las imágenes sin root no escriben en un volumen nuevo.")
     args = parser.parse_args()
     info = json.loads(subprocess.check_output(["docker", "inspect", args.source_container], text=True))[0]
     if info["State"]["Running"]:
@@ -27,20 +28,27 @@ def main():
     if digest.hexdigest() != expected:
         parser.error("El respaldo de archivos fue alterado.")
     code = '''
-import hashlib,json,pathlib,sys,tarfile
+import hashlib,json,os,pathlib,sys,tarfile
 root=pathlib.Path('/restore')
 if any(root.iterdir()): raise ValueError('El destino no está vacío; no se sobrescribe.')
 count=0
+# El filtro data descarta el propietario; como root se devuelve el uid/gid original del respaldo
+# para que una imagen sin root siga pudiendo escribir sus datos restaurados.
+owners={}
 with tarfile.open(fileobj=sys.stdin.buffer,mode='r|gz') as archive:
     for member in archive:
         if member.issym() or member.islnk() or member.isdev() or member.isfifo():
             raise ValueError('Tipo de archivo no admitido; revise el respaldo sin abrir escrituras.')
         archive.extract(member,root,filter='data')
+        owners[member.name]=(member.uid,member.gid)
         if member.isfile(): count+=1
-print(json.dumps({'restored_files':count,'overwritten':False}))
+if os.geteuid()==0:
+    for name,(uid,gid) in owners.items():
+        os.chown(root/name,uid,gid,follow_symlinks=False)
+print(json.dumps({'restored_files':count,'overwritten':False,'owners_preserved':os.geteuid()==0}))
 '''
     with args.archive.open("rb") as stream:
-        subprocess.run(["docker", "run", "--rm", "-i", "--network", "none", "--read-only",
+        subprocess.run(["docker", "run", "--rm", "-i", "--network", "none", "--read-only", "--user", args.user,
                         "--mount", "type=volume,source=" + target["Name"] + ",target=/restore",
                         "--entrypoint", "python3", info["Image"], "-c", code], stdin=stream, check=True)
 
