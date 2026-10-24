@@ -13,18 +13,18 @@ PR backend #38, frontend #123, integración #3, en los repositorios originales.
 | PB-03 | 2 | 5 | BenjaminSM04, SamuelVicente937 | Versiones inmutables con trigger DB y sesiones fijadas; edición/activación docente en UI. Implementado, revisión/integración. |
 | PB-05 | 2 | 5 | Auza056 | Exportador autorizado y anonimización; no se exportó historia real. Falta autorización y muestra revisada. |
 | PB-06 | 2 | 8 | SamuelVicente937, BenjaminCalle1233 | 54 variantes ejecutadas, imagen/hash/observaciones reproducibles; son borradores, cobertura limitada y revisión pendiente. |
-| PB-07 | 3 | 8 | SamuelVicente937, Auza056 | Validador y herramienta de revisión, autor distinto del revisor; falta etiquetado/acuerdo/aprobación reales. |
+| PB-07 | 3 | 8 | SamuelVicente937, Auza056 | Validador, revisión individual y por planilla (todo o nada, revisor distinto del autor), kit en `kit-revision.md`; falta etiquetado/acuerdo/aprobación reales. |
 | PB-08 | 3 | 5 | BenjaminCalle1233 | Pipeline de particiones por problema, procedencia, hashes y contaminación; falta dataset humano aprobado. |
 | PB-09 | 3 | 5 | BenjaminSM04 | Diagnóstico de compilación por evidencia mínima, sin rutas ni causas inventadas. Implementado y probado. |
 | PB-10 | 4 | 5 | SamuelVicente937 | Explicador conservador de tiempo/memoria/ejecución; no infiere señal o línea sin evidencia. Implementado y probado. |
 | PB-11 | 4 | 8 | BenjaminSM04 | Clasificador NB y umbral de validación, probado con fixtures; entrenamiento sobre datos aprobados pendiente. |
 | PB-12 | 4 | 5 | BenjaminCalle1233, Auza056 | Evaluador held-out, macro F1, confusión, soporte y lenguaje/baseline; resultados reales pendientes. |
-| PB-13 | 5 | 5 | BenjaminSM04 | Benchmark común de candidatos y evidencia; faltan dos modelos medidos, memoria y selección revisada. |
+| PB-13 | 5 | 5 | BenjaminSM04 | Dos candidatos Apache-2.0 medidos con revisión inmutable, latencia y RAM/VRAM en CPU con límites de producción y en GPU (`evidencias/medicion-modelos.json`), sobre borradores; falta benchmark sobre muestra aprobada, rúbrica y selección humana. |
 | PB-19 | 5 | 5 | SamuelVicente937, BenjaminCalle1233 | Contexto por lista positiva, relación de entregas, redacción y pruebas señuelo. Implementado, revisión de seguridad. |
-| PB-14 | 5 | 8 | Auza056 | Notebook reproducible y validado estructuralmente; no ejecutado con GPU/dataset aprobados. |
-| PB-15 | 6 | 8 | BenjaminSM04, SamuelVicente937 | Entrenador LoRA/QLoRA, checkpoints, semillas, hashes y puertas de selección; no hay ajuste ni artefacto real. |
+| PB-14 | 5 | 8 | Auza056 | Notebook reproducible; entorno CUDA/NF4/LoRA comprobado en RTX 2060 SUPER (`evidencias/entorno-entrenamiento.json`); no ejecutado: falta dataset aprobado. |
+| PB-15 | 6 | 8 | BenjaminSM04, SamuelVicente937 | Entrenador LoRA/QLoRA con puertas de selección; precisión fp16 en Turing/T4 corregida; no hay ajuste ni artefacto real. |
 | PB-16 | 6 | 5 | BenjaminCalle1233, Auza056 | Criterios y reporte de evaluación preparados; falta evaluación humana/adversarial del modelo real. |
-| PB-17 | 7 | 8 | BenjaminSM04 | Motor/red internos, manifiesto/checksums y readiness cerrada sin modelos. Inferencia real depende PB-15/PB-16. |
+| PB-17 | 7 | 8 | BenjaminSM04 | Motor/red internos, manifiesto/checksums y readiness cerrada sin modelos. Corregido el plazo de 0,5 s que hacía fallar toda generación real; inferencia medida con modelos base, la integración depende de PB-15/PB-16. |
 | PB-18 | 7 | 8 | BenjaminCalle1233 | Endpoint autenticado por sesión, propiedad/CSRF/cuotas/idempotencia. Implementado y probado. |
 | PB-25 | 7 | 5 | SamuelVicente937, Auza056 | Exclusión servidor de concursos/evaluaciones y entregas relacionadas. Implementado y probado. |
 | PB-20 | 8 | 8 | SamuelVicente937 | Panel completo, estados, reintentos, móvil/teclado/tema; Chromium y componentes. Implementado, revisión de usuario. |
@@ -32,9 +32,9 @@ PR backend #38, frontend #123, integración #3, en los repositorios originales.
 | PB-24 | 8 | 5 | BenjaminSM04, Auza056 | Guard/regresiones, contexto acotado y salida segura; filtros heurísticos no garantizan ausencia semántica de soluciones. Falta evaluación del modelo. |
 | PB-22 | 9 | 8 | BenjaminCalle1233, Auza056 | Tres niveles y nuevo intento posterior; sin salto/retroceso ni niveles escritos por cliente. Implementado y probado. |
 | PB-23 | 9 | 5 | SamuelVicente937 | Conceptos y explicaciones fijados a versión; UI docente/alumno. Implementado y probado. |
-| PB-26 | 9 | 5 | BenjaminSM04 | Respaldo determinista/estático, circuito, límites de tamaño y presupuesto total. Implementado y probado. |
+| PB-26 | 9 | 5 | BenjaminSM04 | Respaldo determinista/estático, circuito, límites de tamaño y presupuesto total configurable y coherente motor/backend. Implementado y probado. |
 | PB-27 | 9 | 3 | BenjaminCalle1233 | Métricas únicas, agregados p50/p95/utilidad/versiones y purga dry-run de 90 días. Implementado y probado. |
-| PB-28 | 10 | 8 | BenjaminSM04, BenjaminCalle1233 | Suite, Chromium, migración/recuperación, juez y carga repetidos en el runner de CI (`evidencias/ci-integracion.json`); publicación GHCR bloqueada por permiso del paquete; faltan hardware objetivo, modelo real y aprobación del reporte. |
+| PB-28 | 10 | 8 | BenjaminSM04, BenjaminCalle1233 | Suite, Chromium, migración/recuperación, juez y carga repetidos en el runner de CI (`evidencias/ci-integracion.json`); imágenes publicadas en GHCR por SHA; ensayo desde la procedencia instalada; faltan hardware objetivo, modelo real y aprobación del reporte. |
 | PB-29 | 10 | 5 | Auza056 | Protocolo/instrumentos y resultados explícitamente vacíos. Piloto no ejecutado; requiere autorización y consentimiento. |
 | PB-30 | 10 | 3 | SamuelVicente937 | Guías de actualización/recuperación/uso/riesgos y ensayo aislado. Falta revisión de otro integrante e instalación por operador. |
 

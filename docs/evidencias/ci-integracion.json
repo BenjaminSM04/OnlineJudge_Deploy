@@ -42,5 +42,19 @@
     "accion_requerida": "el dueño del paquete concede Write a OnlineJudge_Deploy en Package settings > Manage Actions access (o elimina el paquete vacío) y se vuelve a ejecutar el job"
   },
   "servidor_desplegado": false,
-  "acceso_produccion": false
+  "acceso_produccion": false,
+  "publicacion_posterior": {
+    "integracion_sha": "cf7174e712b948e9ec8b0b3325336ff1ad93df26",
+    "backend_sha": "767fbb966381399d06843c436534991932b25012",
+    "frontend_sha": "1dd30ea8eb6aca57438740aa0429b17ed1e76530",
+    "ejecucion_push": "https://github.com/BenjaminSM04/OnlineJudge_Deploy/actions/runs/40059321280",
+    "ejecucion_pull_request": "https://github.com/BenjaminSM04/OnlineJudge_Deploy/actions/runs/40059325399",
+    "conclusion": "success",
+    "imagenes": {
+      "ghcr.io/benjaminsm04/lizardjudge:sha-cf7174e712b948e9ec8b0b3325336ff1ad93df26": "sha256:0cc12d14a91c1aaa8aa5862d8671bd50ad0bb3ee334c23ce70e3dadaf747ac2b",
+      "ghcr.io/benjaminsm04/lizardjudge-tutor:sha-cf7174e712b948e9ec8b0b3325336ff1ad93df26": "sha256:bccc2207be25ab2baa5e07bc51135aabb81927f169b9813b68a3476098737139"
+    },
+    "etiquetas_oci_verificadas": true,
+    "nota": "El rechazo 'denied' de 40056195214 no se repitió en 40059069973 ni 40059321280; las imágenes son públicas y no implican despliegue."
+  }
 }

@@ -40,15 +40,47 @@ CI de integración `c50e136` (gitlinks exactos d9cb562/1dd30ea), detalle en
 - Ejecución push 40056195214: las mismas verificaciones pasaron, pero **GHCR rechazó
   el manifiesto** (`denied`) de `ghcr.io/benjaminsm04/lizardjudge`. El paquete ya
   existía, vacío y sin acceso de escritura para Actions de este repositorio.
-  **No hay imágenes publicadas** ni servidor desplegado. Acción del dueño: en
-  Package settings → Manage Actions access, conceder Write a `OnlineJudge_Deploy`
-  (o eliminar el paquete vacío) y volver a ejecutar el job fallido. El Action de
-  sincronización publica en el mismo paquete y necesita el mismo permiso.
+  El rechazo no se repitió en las ejecuciones siguientes.
+- Integración `cf7174e` (backend `767fbb9`, frontend `1dd30ea`): PR 40059325399 y
+  push 40059321280 aprobados; **imágenes publicadas** en GHCR con etiquetas OCI de
+  los tres SHA verificadas tras `pull`: `lizardjudge@sha256:0cc12d14…` y
+  `lizardjudge-tutor@sha256:bccc2207…`. Publicar no es desplegar: el servidor no
+  se tocó.
 
-Restante inmediato: permiso GHCR y nueva ejecución del job push; reconciliar el
-historial de migraciones de la instalación real antes de cualquier despliegue
-(ver sección siguiente). Matriz en `estado-sprints.md`; pendientes humanos/
-modelo/hardware/piloto permanecen explícitos.
+Continuación 24/10 (backend PR #50 sobre `main`, deploy en esta misma rama):
+
+- Kit de revisión: `export_tutor_review_sheet`/`apply_tutor_review_sheet` con
+  revisor único distinto del autor, notas obligatorias y todo o nada; guía
+  `OnlineJudge/docs/ai-tutor/kit-revision.md`. Planilla de los 54 borradores generada
+  localmente en `respaldos/` para el equipo. Ninguna decisión fue aplicada.
+- Configuración de despliegue: booleanos `true/false` además de `1/0`, con fallo
+  cerrado ante valores desconocidos (antes `COOKIE_SECURE=true` dejaba la cookie sin
+  `Secure`), alias `DJANGO_ALLOWED_HOSTS`/`DJANGO_CSRF_TRUSTED_ORIGINS` y `/healthz`.
+- **Defecto del motor corregido**: `urlopen(timeout=0.5)` en el motor y
+  `timeout=(1, 0.5)` en el backend esperaban una respuesta que llama.cpp sin
+  streaming solo envía al terminar; toda generación de más de 0,5 s caía al respaldo
+  y abría el circuito. Ahora `MODEL_TIMEOUT_S` (8 s) y `AI_TUTOR_ENGINE_TIMEOUT`
+  (10 s), validados entre 1 y 30 s, con regresiones de generación lenta y goteo.
+- Medición real de dos candidatos (`evidencias/medicion-modelos.json`), sobre
+  borradores no aprobados: con los límites de producción (2 CPU, 3 GB) y la
+  petición exacta del motor, Qwen2.5-Coder-1.5B Q4_K_M usa 1,1 GB con p50 6,7 s y
+  p95 10,5 s, y 39/54 respuestas llegan en 8 s aceptadas por el guard; Qwen3-1.7B
+  Q8_0 llega al límite de 3 GB con p50 39 s y no es viable. Con el plazo anterior
+  ninguna respuesta llegaba. Aceptado por el guard no equivale a adecuado: varias
+  respuestas proponen la corrección directa; falta revisión humana con la rúbrica.
+- Entorno QLoRA comprobado en RTX 2060 SUPER 8 GB (`evidencias/entorno-entrenamiento.json`):
+  CUDA 12.6, capa NF4 y gradientes LoRA correctos. El entrenador usaba bf16 emulado
+  en Turing; ahora usa fp16 con capacidad < 8.0. No se entrenó: no hay dataset aprobado.
+- Ensayo real desde la procedencia privada instalada hacia la nueva (detalle solo
+  local): 17 tablas con recuentos/hash idénticos, `django_migrations` 77→90 sin
+  pérdidas, sin pendientes, migraciones JSON sin SQL y rollback previo a escrituras.
+  La restauración de archivos ahora conserva el propietario numérico original.
+
+Restante: revisión humana (planilla), selección, entrenamiento y piloto según
+`cierre-con-el-equipo.md`; reconciliar la instalación real antes de desplegar
+(sección siguiente). El Action programado de `main` del deploy sincroniza sin
+controles: tras la fusión del backend, su próxima ejecución combinaría Django 5.2
+con el compose PG10 de `main` hasta integrar este PR #3.
 
 ## Hacia la instalación real (Coolify) sin perder datos
 
