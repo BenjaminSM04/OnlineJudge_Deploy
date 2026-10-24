@@ -1,6 +1,6 @@
 # Cierre con el equipo: lo que solo pueden hacer personas
 
-Todo lo técnico ejecutable está implementado y verificado. Lo que sigue necesita
+La implementación técnica está bajo revisión con evidencia reproducible. Lo que sigue necesita
 decisiones, revisiones o permisos humanos reales. Ningún comando de este
 repositorio los sustituye y ninguna historia debe cerrarse sin esa evidencia.
 Responsables según `estado-sprints.md`.
@@ -10,7 +10,9 @@ Responsables según `estado-sprints.md`.
 - Integrar juntos frontend #123 y deploy #3, y revisar backend #50. El backend #38
   ya está en `main`; mientras #3 no esté integrado, el Action programado de `main`
   del deploy sincroniza sin controles y combinaría Django 5.2 con el compose PG10.
-  Si se prefiere esperar, desactivar ese workflow temporalmente desde Actions.
+  El 24/10/2026 se desactivó temporalmente ese workflow (`disabled_manually`).
+  Mantenerlo así hasta integrar el gate de compatibilidad del PR #3 y verificar
+  los gitlinks; después reactivarlo explícitamente. No se tocó el servidor.
 - Las imágenes `ghcr.io/benjaminsm04/lizardjudge(-tutor):sha-<SHA>` son públicas y
   no se despliegan solas.
 
@@ -19,7 +21,8 @@ Responsables según `estado-sprints.md`.
 Duración estimada: 1–2 h por revisor para 54 ejemplos.
 
 1. Leer `OnlineJudge/docs/ai-tutor/guia-etiquetado.md` y `guia-pedagogica.md`.
-2. Exportar la planilla (o usar la ya generada en `respaldos/`, que es local):
+2. Reexportar la planilla con las columnas de incertidumbre, procedencia y hash
+   incorporadas el 24/10/2026; la planilla antigua ya no es válida:
    `python manage.py export_tutor_review_sheet docs/ai-tutor/variantes/ejemplos-borrador.json planilla-<usuario>.csv`
 3. Cada revisor llena `decision` (approved/rejected/review), `reviewer` (su usuario
    de GitHub) y `notes`, sin editar las demás columnas. Las correcciones de
@@ -67,8 +70,10 @@ El entorno está comprobado en la RTX 2060 SUPER del equipo de BenjaminSM04:
 - Python 3.13, venv en `D:\Juez Virtual\venv-entrenamiento` con
   `deploy/requirements-training.txt`. Torch debe instalarse desde
   `https://download.pytorch.org/whl/cu126` (PyPI entrega la versión CPU).
-- Descargar el modelo base en safetensors (no el GGUF) del candidato elegido, con la
-  revisión fijada; unos 3 GB para 1,5B parámetros. Opcional: `HF_TOKEN`.
+- Registrar `training_model` en selección y candidato del benchmark revisado:
+  repositorio safetensors, revisión propia de 40 hex, licencia y referencia de
+  procedencia. La revisión del repositorio GGUF no identifica sus pesos base.
+  Descargar esa fuente entrenable fijada; opcional: `HF_TOKEN`.
 - Ejecutar `train_tutor_model` o el notebook. Un 1,5B en QLoRA cabe en 8 GB.
 - Convertir el adaptador fusionado a GGUF con llama.cpp (`convert_hf_to_gguf.py` y
   `llama-quantize` Q4_K_M) y volver a medir con `scripts/measure_tutor_candidates.py`.

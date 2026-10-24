@@ -3,7 +3,9 @@
 Se conservan los diez sprints, responsables y 174 SP del tablero. “Implementado”
 significa código y prueba bajo revisión en los tres PR; no implica merge, aprobación
 humana ni despliegue. Ninguna historia se cierra solamente por tener archivos.
-PR backend #38, frontend #123, integración #3, en los repositorios originales.
+Backend #38 ya fue fusionado; su continuación es #50. Frontend #123 e integración
+#3 siguen en revisión en los repositorios originales. La [entrega técnica](entrega.md)
+documenta la revisión del 24/10 y el sincronizador de main temporalmente pausado.
 
 | Historia | Sprint | SP | Responsables originales | Evidencia y pendiente real |
 | --- | --- | --- | --- | --- |

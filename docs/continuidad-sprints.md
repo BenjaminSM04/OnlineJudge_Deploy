@@ -2,8 +2,20 @@
 
 El registro anterior se conserva debajo como historia. Trabajo actual en
 `D:\Juez Virtual\OnlineJudge_Deploy_revision`; el checkout original permanece limpio.
-Ramas: backend `codex/conservacion-arranque`, frontend `codex/version-compilacion`,
-deploy `codex/integracion-conservacion`. PR 38/123/3; no merge ni alojamiento.
+Ramas: backend `codex/revision-y-compatibilidad`, frontend `codex/version-compilacion`,
+deploy `codex/integracion-conservacion`. PR 50/123/3; backend #38 ya fue fusionado.
+Sin acceso al alojamiento. Los apartados posteriores conservan el historial.
+
+## Revisión de entrega del 24/10
+
+Ver `entrega.md` y `evidencias/entrega-local.json`: 291 pruebas Django, 8 del motor,
+14 flujos de interfaz y seis envíos reales al juez en un nuevo proyecto sintético.
+Se corrigieron plazo acumulado HTTP (cabeceras/cuerpo/goteo), procedencia entrenable
+de GGUF y planilla vinculada al contenido completo. Reexportados 54 borradores,
+sin aprobar ninguno. El sincronizador antiguo de main está `disabled_manually`
+hasta integrar el gate del PR #3. No se hizo merge ni despliegue adicional.
+
+## Evidencia anterior
 
 - Backend `d9cb562`: 242 pruebas sobre PG17 y CI/GitGuardian verdes. Incluye
   la regresión del limitador Redis y actualización acotada de Go.

@@ -1,0 +1,22 @@
+{
+  "fecha_local": "2026-10-24",
+  "zona_horaria": "America/La_Paz",
+  "alcance": "ensayo sintetico local; no certifica produccion ni aprobacion academica",
+  "backend_sha": "bbdde5a5ca1d80c2205929865aeadb75c59a5729",
+  "frontend_sha": "1dd30ea8eb6aca57438740aa0429b17ed1e76530",
+  "integracion": "arbol de trabajo que continua d6d4243; CI valida el commit publicado",
+  "proyecto_aislado": "lizardjudge-upgrade-entrega-20261024-a",
+  "acceso_produccion": false,
+  "modelo_entrenado": false,
+  "aprobaciones_humanas_aplicadas": 0,
+  "suite_django": {"pruebas": 291, "resultado": "OK", "postgresql": 17, "fuente": "respaldos/runtime/entrega-suite.log"},
+  "motor": {"pruebas": 8, "resultado": "OK", "incluye_cabeceras_tardias_y_goteo": true},
+  "chromium": {"comprobaciones": 14, "errores_pagina": 0, "anchos": [320, 375, 1280], "veredictos_sembrados": true},
+  "juez_e2e": {"lenguajes": ["C", "C++", "Java", "Python3", "Golang", "JavaScript"], "aceptados": 6, "veredictos_sembrados": false, "logros_unicos": 1},
+  "actualizacion_historica": {"tablas_originales": 21, "columnas_preservadas": true, "redis_y_archivos_restaurados_en_volumenes_nuevos": true, "clave_y_sesion_preservadas": true, "rollback_antes_de_escrituras": "passed"},
+  "carga_respaldo": {"respuestas": 24, "concurrencia": 4, "p50_ms": 64.37, "p95_ms": 77.44, "rechazos_cuota": 4, "inferencia_modelo": false, "pico_memoria_medido": false},
+  "contenedor_motor_sin_artefactos": {"readiness": 503, "feedback": 503},
+  "planilla_reexportada": {"borradores": 54, "decisiones": 0, "ubicacion_privada": "respaldos/runtime/planilla-entrega-20261024.csv"},
+  "sincronizacion_main": {"workflow": "update-submodules.yml", "estado_verificado": "disabled_manually", "motivo": "espera la integracion del gate Django5.2/PG17"},
+  "ci_nueva": "consultar checks de los PR #50 y #3; no inferir exito de este informe local"
+}

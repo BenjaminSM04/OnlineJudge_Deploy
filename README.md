@@ -58,7 +58,7 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
 |----------|-----------|---------|
 | **oj-backend** | Python 3.12 / Django / Nginx | API REST + serve del frontend compilado |
 | **oj-judge** | C/C++ Sandbox | Ejecuta y evalúa las soluciones de forma segura |
-| **oj-postgres** | PostgreSQL 10 | Base de datos relacional |
+| **oj-postgres** | PostgreSQL 17 | Base de datos relacional; volumen restaurado explícito |
 | **oj-redis** | Redis 7 | Caché y cola de tareas |
 
 ---
@@ -66,13 +66,16 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
 ## Instalación y Ejecución
 
 Para actualizar una instalación existente, lea primero
-[Integración y conservación de datos](docs/integracion-y-datos.md).
-Incluye el ensayo aislado y el procedimiento de respaldo y recuperación.
+[Actualización y recuperación](docs/actualizacion-django52-pg17.md).
+No ejecutar la instalación rápida sobre una base PostgreSQL 10 existente.
+La [guía de entrega](docs/entrega.md) reúne evidencias y aprobaciones pendientes.
+El tutor generativo permanece apagado hasta la evaluación del modelo.
 
 ### Requisitos previos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo.
-- Al menos **2 GB de RAM** disponible para Docker.
+- Espacio para dos bases independientes, imágenes y respaldos durante el ensayo.
+- El perfil opcional de modelos reserva hasta 3 GB adicionales para llama.cpp.
 - Conexión a internet (solo la primera vez, para descargar imágenes base).
 
 ### Pasos
@@ -84,13 +87,16 @@ Incluye el ensayo aislado y el procedimiento de respaldo y recuperación.
    cd OnlineJudge_Deploy
    ```
 
-2. **Construir y levantar los servicios:**
+2. **Verificar primero en un entorno sintético aislado:**
 
    ```bash
-   docker-compose up -d --build
+   python scripts/verify_upgrade.py --project lizardjudge-upgrade-demostracion-01 --keep-running
    ```
 
-   > ⏱️ La primera vez tardará entre **5 a 15 minutos** mientras se descargan las dependencias y se compila el frontend.
+   El nombre debe ser nuevo. El comando construye ambas versiones, ensaya la
+   recuperación y ejecuta la suite. Genera credenciales efímeras en memoria y
+   escucha solo en `http://127.0.0.1:18082`. No utiliza datos del servidor.
+   No recree sus contenedores con otro entorno; para repetir elija otro nombre.
 
 3. **Verificar que todos los contenedores estén saludables:**
 
@@ -98,22 +104,32 @@ Incluye el ensayo aislado y el procedimiento de respaldo y recuperación.
    docker ps -a
    ```
 
-   Deberías ver los 4 contenedores con estado `Up` y el backend con `(healthy)`.
+   El backend y los servicios de este proyecto deben estar saludables. El ensayo
+   mantiene separados origen, destino y Redis restaurado; conserva sus volúmenes.
 
 4. **Acceder a la plataforma:**
 
    | URL | Descripción |
    |-----|-------------|
-   | `http://localhost` | Página principal del juez |
-   | `http://localhost/admin` | Panel de administración |
+   | `http://127.0.0.1:18082` | Página principal del ensayo |
+   | `http://127.0.0.1:18082/admin` | Panel de administración del ensayo |
 
    En una instalación nueva, cree el administrador explícitamente:
 
    ```bash
-   docker compose exec oj-backend python manage.py inituser --username administrador --action create_super_admin
+   docker compose -p lizardjudge-upgrade-demostracion-01 -f compose.upgrade-verify.yml exec oj-backend python manage.py inituser --username administrador --action create_super_admin
    ```
 
    La contraseña se solicita en la terminal. Una actualización conserva los usuarios existentes.
+
+   El ensayo no inicia el juez: `verify_submission_e2e.py` lo prepara y comprueba
+   mediante seis envíos reales; consulte la guía de entrega.
+
+Para una instalación nueva independiente, prepare un `.env` privado desde
+`.env.example`, cree explícitamente un volumen PG17 nuevo y asígnelo a
+`OJ_PG17_VOLUME`. Para actualizar, este volumen debe contener la restauración
+verificada; crear uno vacío no migra nada. En HTTP local `COOKIE_SECURE=0`;
+en HTTPS real `COOKIE_SECURE=1`, con hosts y orígenes explícitos.
 
 ---
 
@@ -155,20 +171,10 @@ OnlineJudgeDeploy/
 ## Comandos útiles
 
 ```bash
-# Levantar servicios
-docker-compose up -d --build
-
-# Ver logs en tiempo real
-docker-compose logs -f
-
-# Ver logs solo del backend
-docker-compose logs -f oj-backend
-
-# Detener todos los servicios
-docker-compose down
-
-# Reconstruir solo si hay cambios en el código
-docker-compose up -d --build oj-backend
+# Revisar y detener solo el ensayo, conservando sus volúmenes
+docker compose -p lizardjudge-upgrade-demostracion-01 -f compose.upgrade-verify.yml ps
+docker compose -p lizardjudge-upgrade-demostracion-01 -f compose.upgrade-verify.yml logs --tail 50 oj-backend
+docker compose -p lizardjudge-upgrade-demostracion-01 -f compose.upgrade-verify.yml stop
 ```
 
 ---

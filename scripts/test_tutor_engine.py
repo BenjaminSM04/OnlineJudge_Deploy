@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-for module, file in (("guard", "OnlineJudge/ai_tutor/services/output_guard.py"), ("classifier_runtime", "OnlineJudge/ai_tutor/ml/runtime.py"), ("tutor_server", "tutor_engine/server.py")):
+for module, file in (("guard", "OnlineJudge/ai_tutor/services/output_guard.py"), ("classifier_runtime", "OnlineJudge/ai_tutor/ml/runtime.py"), ("bounded_http", "OnlineJudge/utils/bounded_http.py"), ("tutor_server", "tutor_engine/server.py")):
     spec = importlib.util.spec_from_file_location(module, ROOT / file)
     instance = importlib.util.module_from_spec(spec)
     sys.modules[module] = instance
@@ -53,6 +53,8 @@ class FakeModel(BaseHTTPRequestHandler):
     """llama.cpp sin streaming: cabeceras solo al terminar de generar (o goteo tras ellas)."""
     delay = 0.0
     drip = False
+    staged = False
+    header_drip = False
     body = json.dumps({"choices": [{"message": {"content": json.dumps(
         {"content": "Revisa cómo cambia el acumulador en cada iteración.", "uncertainty": "", "model_version": "x"})}}]}).encode()
 
@@ -67,6 +69,14 @@ class FakeModel(BaseHTTPRequestHandler):
     def do_POST(self):
         self.rfile.read(int(self.headers["Content-Length"]))
         try:
+            if self.header_drip:
+                self.wfile.write(b"HTTP/1.0 200 OK\r\nX-Fixture: ")
+                self.wfile.flush()
+                for _ in range(20):
+                    self.wfile.write(b"x")
+                    self.wfile.flush()
+                    time.sleep(0.2)
+                return
             if self.drip:
                 self.send_response(200)
                 self.send_header("Content-Length", "100")
@@ -80,6 +90,8 @@ class FakeModel(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Length", str(len(self.body)))
             self.end_headers()
+            if self.staged:
+                time.sleep(0.7)
             self.wfile.write(self.body)
         except OSError:
             pass  # el motor cortó antes: es el caso esperado en las pruebas de exceso
@@ -106,7 +118,8 @@ class TimeoutTests(unittest.TestCase):
         server.MODEL_URL = "http://127.0.0.1:%d" % self.model.server_address[1]
         server.ARTIFACTS = ({"model_revision": "fixture"}, {})
         server.predict = lambda classifier, record: ("fixture", 0.5)
-        FakeModel.delay, FakeModel.drip = 0.0, False
+        FakeModel.delay, FakeModel.drip, FakeModel.staged = 0.0, False, False
+        FakeModel.header_drip = False
 
     def feedback(self):
         context = {"schema_version": 1, "action": "hint", "level": 1, "concept": "c", "problem": {}, "code": "x", "language": "C",
@@ -151,6 +164,20 @@ class TimeoutTests(unittest.TestCase):
         for raw in ("0", "0.5", "31", "-1", "abc", "", "nan", "inf"):
             with self.subTest(raw=raw), mock.patch.dict(os.environ, {"MODEL_TIMEOUT_S": raw}), self.assertRaises(ValueError):
                 server.model_timeout()
+
+    def test_late_headers_do_not_grant_another_body_budget(self):
+        FakeModel.delay, FakeModel.staged = 0.7, True
+        server.MODEL_TIMEOUT_S = 1
+        status, _, elapsed = self.feedback()
+        self.assertEqual(status, 503)
+        self.assertLess(elapsed, 1.25)
+
+    def test_dripping_headers_are_also_cut_by_total_deadline(self):
+        FakeModel.header_drip = True
+        server.MODEL_TIMEOUT_S = 1
+        status, _, elapsed = self.feedback()
+        self.assertEqual(status, 503)
+        self.assertLess(elapsed, 1.25)
 
 
 if __name__ == "__main__":
