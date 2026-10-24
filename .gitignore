@@ -16,3 +16,13 @@ __pycache__/
 # SO
 Thumbs.db
 .DS_Store
+
+# Respaldos y configuración privada
+.env
+.env.*
+!.env.example
+respaldos/
+*.dump
+*.sql
+*.sha256
+*.tar.gz

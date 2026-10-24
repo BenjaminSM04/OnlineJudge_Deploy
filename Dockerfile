@@ -1,12 +1,12 @@
 # =============================================================================
-# Dockerfile para OnlineJudge (Backend + Frontend desde cÃ³digo local)
-# Build context: directorio raÃ­z del proyecto (donde estÃ¡n OnlineJudge/ y OnlineJudgeFE/)
+# Imagen combinada desde el código de ambos repositorios.
+# Contexto: raíz del deploy, con OnlineJudge/ y OnlineJudgeFE/.
 # =============================================================================
 
 # --- Etapa 1: Compilar el Frontend ---
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 
-# git es necesario porque config/dev.env.js ejecuta "git rev-parse HEAD"
+# Git permite instalar dependencias cuyo origen sea un repositorio.
 RUN apk add --no-cache git
 
 WORKDIR /fe
@@ -15,17 +15,17 @@ WORKDIR /fe
 ENV NODE_OPTIONS=--openssl-legacy-provider
 
 # Copiar archivos de dependencias primero (mejor uso de cache de Docker)
-COPY ./OnlineJudgeFE/package.json ./OnlineJudgeFE/package-lock.json* ./
-RUN npm install --legacy-peer-deps
+COPY ./OnlineJudgeFE/package.json ./OnlineJudgeFE/yarn.lock ./
+RUN yarn install --frozen-lockfile --non-interactive
 
-# Copiar el resto del cÃ³digo fuente del frontend y compilar
+# Copiar el código fuente del frontend y compilar.
 COPY ./OnlineJudgeFE/ ./
 
-# Inicializar un repo git dummy (el .git real se excluye por .dockerignore)
-# Esto es necesario porque config/dev.env.js ejecuta "git rev-parse HEAD"
-RUN git init && git add -A && git -c user.email="build@local" -c user.name="build" commit -m "build" --allow-empty
+# El identificador real se suministra desde CI o docker compose build.
+ARG FRONTEND_COMMIT=local
+ENV SOURCE_COMMIT=$FRONTEND_COMMIT
 
-RUN npm run build:dll && npm run build
+RUN yarn test:tutor && yarn build:dll && yarn build
 
 
 # --- Etapa 2: Imagen final del Backend ---
@@ -33,7 +33,7 @@ FROM python:3.12-alpine
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-ENV OJ_ENV production
+ENV OJ_ENV=production
 WORKDIR /app
 
 COPY ./OnlineJudge/deploy/requirements.txt /app/deploy/
@@ -48,7 +48,7 @@ RUN --mount=type=cache,target=/etc/apk/cache,id=apk-cache-$TARGETARCH$TARGETVARI
     pip install -r /app/deploy/requirements.txt && \
     apk del gcc libc-dev python3-dev libpq-dev libjpeg-turbo-dev zlib-dev freetype-dev
 
-# Copiar cÃ³digo del backend
+# Copiar el código del backend.
 COPY ./OnlineJudge/ /app/
 
 # Copiar el frontend compilado desde la etapa 1
@@ -56,6 +56,6 @@ COPY --from=frontend-builder --link /fe/dist/ /app/dist/
 
 RUN sed -i 's/\r$//' ./deploy/entrypoint.sh && chmod -R u=rwX,go=rX ./ && chmod +x ./deploy/entrypoint.sh
 
-HEALTHCHECK --interval=5s CMD [ "/usr/local/bin/python3", "/app/deploy/health_check.py" ]
+HEALTHCHECK --start-period=90s --interval=5s --timeout=5s --retries=5 CMD [ "/usr/local/bin/python3", "/app/deploy/health_check.py" ]
 EXPOSE 8000
 ENTRYPOINT [ "/app/deploy/entrypoint.sh" ]
