@@ -55,6 +55,8 @@ Elija un nombre de proyecto **nuevo** para cada ensayo. `compose.verify.yml` se
 usa solo: no se combina con el Compose habitual. Crea volúmenes independientes
 para PostgreSQL 10, PostgreSQL 17 y archivos; el HTTP solo escucha en loopback.
 No inicia un juez real ni utiliza `./data` o el volumen `pgdata` del servidor.
+El script genera credenciales aleatorias en memoria para cada proyecto nuevo;
+no se guardan en el repositorio ni se reutilizan credenciales del servidor.
 
 El ensayo aplica migraciones, ejecuta las pruebas de tutor y administrador,
 crea datos sintéticos relacionados, comprueba HTTP y reinicio, respalda archivos

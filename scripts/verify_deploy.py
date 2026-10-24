@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import secrets
 from pathlib import Path
 import subprocess
 import sys
@@ -20,6 +21,8 @@ def main():
     args = parser.parse_args()
     if not args.project.startswith("lizardjudge-verificacion-"):
         parser.error("Use un proyecto nuevo con prefijo lizardjudge-verificacion-.")
+    os.environ.setdefault("VERIFY_DATABASE_PASSWORD", secrets.token_urlsafe(32))
+    os.environ.setdefault("VERIFY_JUDGE_TOKEN", secrets.token_urlsafe(32))
     compose = ["docker", "compose", "-p", args.project, "-f", str(ROOT / "compose.verify.yml")]
 
     def run(command, **kwargs):
@@ -34,11 +37,13 @@ def main():
     db_args = ["--project", args.project, "--compose-file", str(ROOT / "compose.verify.yml"),
                "--directory", str(backup_dir), "--writers-stopped"]
     try:
+        failure_env = dict(os.environ, POSTGRES_PASSWORD=secrets.token_urlsafe(32),
+                           JUDGE_SERVER_TOKEN=secrets.token_urlsafe(32))
         failure = subprocess.run(["docker", "run", "--rm", "--network", "none", "-e", "POSTGRES_HOST=127.0.0.1",
                                   "-e", "POSTGRES_DB=onlinejudge", "-e", "POSTGRES_USER=onlinejudge",
-                                  "-e", "POSTGRES_PASSWORD=ensayo", "-e", "JUDGE_SERVER_TOKEN=ensayo",
+                                  "-e", "POSTGRES_PASSWORD", "-e", "JUDGE_SERVER_TOKEN",
                                   "-e", "MAX_WORKER_NUM=2", "lizardjudge-revision:local"],
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=failure_env)
         assert failure.returncode == 1 and b"Se cancela el arranque" in failure.stdout, "El arranque no falló cerrado."
         run(compose + ["up", "-d", "--wait", "--wait-timeout", "120", "oj-postgres", "oj-postgres17", "oj-redis"])
         run(compose + ["up", "-d", "--wait", "--wait-timeout", "120", "oj-backend"])
@@ -47,7 +52,7 @@ def main():
                        "ai_tutor", "utils.test_inituser", "--noinput", "--verbosity", "0"])
         app('from account.models import User; assert User.objects.count() == 0; print("Sin administrador automático")')
         fixture = '''
-import copy, hashlib, json
+import copy, hashlib, json, secrets
 from pathlib import Path
 from django.core.management import call_command
 from account.models import User
@@ -55,7 +60,7 @@ from problem.tests import DEFAULT_PROBLEM_DATA, ProblemCreateTestBase
 from submission.models import Submission
 from ai_tutor.models import TutorSession, TutorAttempt
 from ai_tutor.tests.config_factory import create_active_config
-call_command("inituser", username="admin-ensayo", password="Clave-larga-de-ensayo-936!", action="create_super_admin")
+call_command("inituser", username="admin-ensayo", password=secrets.token_urlsafe(32), action="create_super_admin")
 user = User.objects.get(username="admin-ensayo")
 data = copy.deepcopy(DEFAULT_PROBLEM_DATA)
 data.update(title="Conservación: ñ y fórmulas", samples=[{"input": "1\\n", "output": "2\\n"}])

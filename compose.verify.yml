@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: onlinejudge
       POSTGRES_USER: onlinejudge
-      POSTGRES_PASSWORD: verificacion-local-sin-datos-reales
+      POSTGRES_PASSWORD: ${VERIFY_DATABASE_PASSWORD:?Ejecute scripts/verify_deploy.py}
     volumes:
       - pg10:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
     environment:
       POSTGRES_DB: onlinejudge
       POSTGRES_USER: onlinejudge
-      POSTGRES_PASSWORD: verificacion-local-sin-datos-reales
+      POSTGRES_PASSWORD: ${VERIFY_DATABASE_PASSWORD:?Ejecute scripts/verify_deploy.py}
     volumes:
       - pg17:/var/lib/postgresql/data
     healthcheck:
@@ -39,8 +39,8 @@ services:
     environment:
       POSTGRES_DB: onlinejudge
       POSTGRES_USER: onlinejudge
-      POSTGRES_PASSWORD: verificacion-local-sin-datos-reales
-      JUDGE_SERVER_TOKEN: verificacion-local-sin-juez-publico
+      POSTGRES_PASSWORD: ${VERIFY_DATABASE_PASSWORD:?Ejecute scripts/verify_deploy.py}
+      JUDGE_SERVER_TOKEN: ${VERIFY_JUDGE_TOKEN:?Ejecute scripts/verify_deploy.py}
       MAX_WORKER_NUM: '2'
     volumes:
       - backend:/data
