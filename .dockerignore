@@ -11,3 +11,10 @@
 !OnlineJudge/data/public/website/favicon.ico
 **/__pycache__
 **/*.pyc
+**/.env
+**/.env.*
+respaldos/
+**/*.dump
+**/*.sql
+**/*.sha256
+**/*.tar.gz

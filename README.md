@@ -65,6 +65,10 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
 
 ## Instalación y Ejecución
 
+Para actualizar una instalación existente, lea primero
+[Integración y conservación de datos](docs/integracion-y-datos.md).
+Incluye el ensayo aislado y el procedimiento de respaldo y recuperación.
+
 ### Requisitos previos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo.
@@ -76,7 +80,7 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
 1. **Clonar el repositorio:**
 
    ```bash
-   git clone https://github.com/BenjaminSM04/OnlineJudge_Deploy
+   git clone --recurse-submodules https://github.com/BenjaminSM04/OnlineJudge_Deploy
    cd OnlineJudge_Deploy
    ```
 
@@ -103,11 +107,13 @@ El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
    | `http://localhost` | Página principal del juez |
    | `http://localhost/admin` | Panel de administración |
 
-   **Credenciales por defecto del administrador:**
-   - **Usuario:** `root`
-   - **Contraseña:** `rootroot`
+   En una instalación nueva, cree el administrador explícitamente:
 
-   > **Cambiar la contraseña del administrador después del primer inicio de sesión.**
+   ```bash
+   docker compose exec oj-backend python manage.py inituser --username administrador --action create_super_admin
+   ```
+
+   La contraseña se solicita en la terminal. Una actualización conserva los usuarios existentes.
 
 ---
 
@@ -160,9 +166,6 @@ docker-compose logs -f oj-backend
 
 # Detener todos los servicios
 docker-compose down
-
-# Detener y ELIMINAR todos los datos (base de datos, etc.)
-docker-compose down -v
 
 # Reconstruir solo si hay cambios en el código
 docker-compose up -d --build oj-backend

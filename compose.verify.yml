@@ -1,0 +1,57 @@
+# Entorno independiente: nunca montar data/ ni pgdata del despliegue.
+services:
+  oj-postgres:
+    image: postgres:10-alpine
+    environment:
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD:
+    volumes:
+      - pg10:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  oj-postgres17:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD:
+    volumes:
+      - pg17:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  oj-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  oj-backend:
+    image: lizardjudge-revision:local
+    build: .
+    environment:
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD:
+      JUDGE_SERVER_TOKEN:
+      MAX_WORKER_NUM: '2'
+    volumes:
+      - backend:/data
+    ports:
+      - '127.0.0.1:${VERIFY_HTTP_PORT:-18080}:8000'
+    depends_on:
+      oj-postgres:
+        condition: service_healthy
+      oj-redis:
+        condition: service_healthy
+volumes:
+  pg10:
+  pg17:
+  backend:

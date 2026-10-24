@@ -1,0 +1,19 @@
+# Uso exclusivo para preparar un destino vacío; no cambia la conexión del backend.
+services:
+  oj-postgres17:
+    profiles: [migracion]
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-onlinejudge}
+      POSTGRES_USER: ${POSTGRES_USER:-onlinejudge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Conserve la contraseña del despliegue en el entorno privado}
+    volumes:
+      - pgdata17:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 3s
+      timeout: 5s
+      retries: 30
+volumes:
+  pgdata17:

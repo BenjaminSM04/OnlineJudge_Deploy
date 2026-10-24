@@ -1,0 +1,21 @@
+name: Verifica integración y conservación de datos
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Compila con el lockfile y el commit real del frontend
+        run: docker build --build-arg FRONTEND_COMMIT="$(git -C OnlineJudgeFE rev-parse HEAD)" -t lizardjudge-revision:local .
+      - name: Ensaya arranque, respaldo y restauración sin pérdida
+        run: python3 scripts/verify_deploy.py --project lizardjudge-verificacion-${{ github.run_id }}-${{ github.run_attempt }}
