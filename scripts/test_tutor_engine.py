@@ -1,11 +1,18 @@
 """Regresiones de integridad del motor, sin descargar ni aprobar modelos."""
 import hashlib
 import importlib.util
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
+import threading
+import time
 import unittest
+from unittest import mock
+import urllib.error
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 for module, file in (("guard", "OnlineJudge/ai_tutor/services/output_guard.py"), ("classifier_runtime", "OnlineJudge/ai_tutor/ml/runtime.py"), ("tutor_server", "tutor_engine/server.py")):
@@ -40,6 +47,110 @@ class IntegrityTests(unittest.TestCase):
                      'Revisa esto: System.out.println(a+b);'):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 server.validate_output({"content": text, "uncertainty": "", "model_version": "fixture"})
+
+
+class FakeModel(BaseHTTPRequestHandler):
+    """llama.cpp sin streaming: cabeceras solo al terminar de generar (o goteo tras ellas)."""
+    delay = 0.0
+    drip = False
+    body = json.dumps({"choices": [{"message": {"content": json.dumps(
+        {"content": "Revisa cómo cambia el acumulador en cada iteración.", "uncertainty": "", "model_version": "x"})}}]}).encode()
+
+    def log_message(self, *args):
+        pass
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def do_POST(self):
+        self.rfile.read(int(self.headers["Content-Length"]))
+        try:
+            if self.drip:
+                self.send_response(200)
+                self.send_header("Content-Length", "100")
+                self.end_headers()
+                for _ in range(100):
+                    self.wfile.write(b" ")
+                    self.wfile.flush()
+                    time.sleep(0.3)
+                return
+            time.sleep(self.delay)
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(self.body)))
+            self.end_headers()
+            self.wfile.write(self.body)
+        except OSError:
+            pass  # el motor cortó antes: es el caso esperado en las pruebas de exceso
+
+
+def serve(handler):
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    httpd.daemon_threads = True
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return httpd
+
+
+class TimeoutTests(unittest.TestCase):
+    """Regresión: el timeout de socket no puede ser más corto que la generación."""
+
+    def setUp(self):
+        self.model = serve(FakeModel)
+        self.engine = serve(server.Handler)
+        saved = (server.MODEL_URL, server.MODEL_TIMEOUT_S, server.ARTIFACTS, server.predict)
+        self.addCleanup(lambda: (setattr(server, "MODEL_URL", saved[0]), setattr(server, "MODEL_TIMEOUT_S", saved[1]),
+                                 setattr(server, "ARTIFACTS", saved[2]), setattr(server, "predict", saved[3])))
+        for httpd in (self.engine, self.model):
+            self.addCleanup(lambda httpd=httpd: (httpd.shutdown(), httpd.server_close()))
+        server.MODEL_URL = "http://127.0.0.1:%d" % self.model.server_address[1]
+        server.ARTIFACTS = ({"model_revision": "fixture"}, {})
+        server.predict = lambda classifier, record: ("fixture", 0.5)
+        FakeModel.delay, FakeModel.drip = 0.0, False
+
+    def feedback(self):
+        context = {"schema_version": 1, "action": "hint", "level": 1, "concept": "c", "problem": {}, "code": "x", "language": "C",
+                   "diagnostic": {}, "concepts": [], "history": [], "config_version": 1}
+        request = urllib.request.Request("http://127.0.0.1:%d/v1/feedback" % self.engine.server_address[1], json.dumps(context).encode(),
+                                         {"Content-Type": "application/json"})
+        started = time.monotonic()
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                return response.status, json.loads(response.read()), time.monotonic() - started
+        except urllib.error.HTTPError as error:
+            return error.code, json.loads(error.read()), time.monotonic() - started
+
+    def test_slow_generation_within_budget_is_accepted(self):
+        FakeModel.delay = 1.0  # con el timeout anterior de 0.5 s esto fallaba
+        server.MODEL_TIMEOUT_S = 3
+        status, data, _ = self.feedback()
+        self.assertEqual(status, 200)
+        self.assertEqual(data["model_version"], "fixture")
+
+    def test_generation_over_budget_is_rejected(self):
+        FakeModel.delay = 2.5
+        server.MODEL_TIMEOUT_S = 1
+        status, data, elapsed = self.feedback()
+        self.assertEqual((status, data), (503, {"error": "unavailable"}))
+        self.assertLess(elapsed, 2.0)
+
+    def test_dripping_response_is_cut_by_total_deadline(self):
+        FakeModel.drip = True  # cada lectura llega antes del timeout de socket
+        server.MODEL_TIMEOUT_S = 1
+        status, _, elapsed = self.feedback()
+        self.assertEqual(status, 503)
+        self.assertLess(elapsed, 2.0)
+
+    def test_budget_configuration_is_validated(self):
+        for raw, expected in (("8", 8.0), ("1", 1.0), ("30", 30.0), ("2.5", 2.5)):
+            with self.subTest(raw=raw), mock.patch.dict(os.environ, {"MODEL_TIMEOUT_S": raw}):
+                self.assertEqual(server.model_timeout(), expected)
+        with mock.patch.dict(os.environ):
+            os.environ.pop("MODEL_TIMEOUT_S", None)
+            self.assertEqual(server.model_timeout(), 8.0)
+        for raw in ("0", "0.5", "31", "-1", "abc", "", "nan", "inf"):
+            with self.subTest(raw=raw), mock.patch.dict(os.environ, {"MODEL_TIMEOUT_S": raw}), self.assertRaises(ValueError):
+                server.model_timeout()
 
 
 if __name__ == "__main__":

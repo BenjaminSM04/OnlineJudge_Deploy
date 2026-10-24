@@ -3,6 +3,7 @@ services:
     environment:
       AI_TUTOR_MODEL_ENABLED: ${AI_TUTOR_MODEL_ENABLED:-0}
       AI_TUTOR_ENGINE_URL: http://oj-tutor:8080
+      AI_TUTOR_ENGINE_TIMEOUT: ${AI_TUTOR_ENGINE_TIMEOUT:-10}
     networks: [default, tutor]
   oj-tutor:
     profiles: [tutor]
@@ -16,6 +17,8 @@ services:
     pids_limit: 64
     mem_limit: 256m
     cpus: 1
+    environment:
+      MODEL_TIMEOUT_S: ${MODEL_TIMEOUT_S:-8}
     volumes: ['${TUTOR_MODEL_DIR:-./artifacts/tutor}:/models:ro']
     networks: [tutor]
   oj-model:

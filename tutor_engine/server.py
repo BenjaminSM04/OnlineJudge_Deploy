@@ -2,6 +2,7 @@
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import math
 import os
 from pathlib import Path
 import threading
@@ -15,6 +16,20 @@ ROOT = Path("/models").resolve()
 MODEL_URL = os.environ.get("MODEL_URL", "http://oj-model:8080")
 SLOTS = threading.BoundedSemaphore(2)
 ARTIFACTS = None
+# Presupuesto total (conexión + generación + lectura) por petición al modelo.
+MODEL_TIMEOUT_S = 8.0
+
+
+def model_timeout():
+    """Lee MODEL_TIMEOUT_S del entorno (1-30 s); falla cerrado si no es válido."""
+    raw = os.environ.get("MODEL_TIMEOUT_S", "8")
+    try:
+        value = float(raw)
+    except ValueError:
+        raise ValueError("model-timeout") from None
+    if not math.isfinite(value) or not 1 <= value <= 30:
+        raise ValueError("model-timeout")
+    return value
 
 
 def checked_file(entry):
@@ -101,8 +116,12 @@ class Handler(BaseHTTPRequestHandler):
             payload = {"messages": [{"role": "system", "content": prompt}, {"role": "user", "content": json.dumps({"context": context, "classification": {"category": category, "confidence": confidence}}, ensure_ascii=True)}],
                        "max_tokens": 400, "temperature": 0, "seed": 2026, "response_format": {"type": "json_object"}}
             request = urllib.request.Request(MODEL_URL + "/v1/chat/completions", json.dumps(payload).encode(), {"Content-Type": "application/json"})
-            deadline = time.monotonic() + 3
-            with urllib.request.urlopen(request, timeout=0.5) as response:
+            # llama.cpp sin streaming envía cabeceras al terminar de generar: el timeout
+            # de socket debe cubrir todo el presupuesto. urllib no separa el de conexión,
+            # así que el presupuesto cubre conexión y generación; el corte por deadline
+            # durante la lectura evita que un goteo lo supere por más de un timeout.
+            deadline = time.monotonic() + MODEL_TIMEOUT_S
+            with urllib.request.urlopen(request, timeout=MODEL_TIMEOUT_S) as response:
                 raw = b""
                 while len(raw) <= 16000:
                     chunk = response.read(1)
@@ -124,9 +143,13 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     try:
+        MODEL_TIMEOUT_S = model_timeout()
         ARTIFACTS = load_artifacts()
-    except (OSError, ValueError, KeyError, TypeError):
-        print("Motor sin artefactos aprobados compatibles; readiness desactivada.", flush=True)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        if str(error) == "model-timeout":
+            print("MODEL_TIMEOUT_S debe ser un número entre 1 y 30; readiness desactivada.", flush=True)
+        else:
+            print("Motor sin artefactos aprobados compatibles; readiness desactivada.", flush=True)
     server = ThreadingHTTPServer(("0.0.0.0", 8080), Handler)
     server.daemon_threads = True
     server.serve_forever()
