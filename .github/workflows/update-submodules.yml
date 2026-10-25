@@ -52,9 +52,14 @@ jobs:
           pip install playwright==1.64.0
           python -m playwright install --with-deps chromium
           python3 scripts/test_tutor_engine.py
+          python3 scripts/test_defense_tools.py
           python3 scripts/verify_ui.py --project lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }}
           python3 scripts/verify_submission_e2e.py --project lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }}
           python3 scripts/verify_engine_unavailable.py
+          docker tag lizardjudge-sprints:local lizardjudge-defensa:local
+          python3 scripts/defense_demo.py init --project lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          python3 scripts/verify_defense_demo.py --project lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          python3 scripts/defense_demo.py stop --project lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/respaldos/runtime:/reports" aquasec/trivy:0.75.0 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --format json --output /reports/image-audit.json lizardjudge-sprints:local
 
       - name: Conserva evidencia de compatibilidad
@@ -67,6 +72,7 @@ jobs:
             respaldos/runtime/ui/
             respaldos/runtime/submission-e2e.json
             respaldos/runtime/image-audit.json
+            respaldos/runtime/lizardjudge-defensa-sync-*/
 
       - name: Guarda y publica únicamente los punteros comprobados
         shell: bash
@@ -102,4 +108,8 @@ jobs:
 
       - name: Detiene el ensayo conservando sus volúmenes
         if: always()
-        run: docker compose -p lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }} -f compose.upgrade-verify.yml stop
+        run: |
+          if [ -f ".verification/runtime/defensa/lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}/state.json" ]; then
+            python3 scripts/defense_demo.py stop --project lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          fi
+          docker compose -p lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }} -f compose.upgrade-verify.yml stop

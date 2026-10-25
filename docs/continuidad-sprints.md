@@ -1,5 +1,19 @@
 # Estado vigente de la continuación
 
+## Defensa y entrega funcional
+
+La instrucción vigente autoriza merges y entrenamiento real con sintéticos; el
+piloto se conserva como propuesta documental no ejecutada, fuera del cierre
+funcional. PR #50/#123/#3 fusionados y main verificado; sincronizador activo con
+gates. Ramas de continuación backend/deploy: `codex/defensa-entrega`.
+
+Resultados: 300 pruebas Django; 144 variantes y 36 controles observados en el
+juez; dataset 96/24/24; clasificador y QLoRA reales (tres épocas, 500,49 s), GGUF
+Q4_K_M y tres pistas generadas en la aplicación con login y veredictos reales.
+Ver `docs/defensa/README.md` y `docs/defensa/evidencias.json`. No se tocó el servidor.
+
+## Registro anterior
+
 El registro anterior se conserva debajo como historia. Trabajo actual en
 `D:\Juez Virtual\OnlineJudge_Deploy_revision`; el checkout original permanece limpio.
 Ramas: backend `codex/revision-y-compatibilidad`, frontend `codex/version-compilacion`,

@@ -1,0 +1,114 @@
+services:
+  oj-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Use scripts/defense_demo.py}
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  oj-redis:
+    image: redis:7-alpine
+    volumes: [redis:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  oj-backend:
+    image: ${DEFENSE_IMAGE:-lizardjudge-defensa:local}
+    environment:
+      POSTGRES_HOST: oj-postgres
+      POSTGRES_DB: onlinejudge
+      POSTGRES_USER: onlinejudge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Use scripts/defense_demo.py}
+      REDIS_HOST: oj-redis
+      JUDGE_SERVER_TOKEN: ${JUDGE_SERVER_TOKEN:?Use scripts/defense_demo.py}
+      OJ_VERIFICATION_ONLY: '1'
+      MAX_WORKER_NUM: '2'
+      ALLOWED_HOSTS: localhost,127.0.0.1,oj-backend
+      COOKIE_SECURE: '0'
+      AI_TUTOR_MODEL_ENABLED: ${DEFENSE_MODEL_ENABLED:-0}
+      AI_TUTOR_ENGINE_URL: http://oj-tutor:8080
+      AI_TUTOR_ENGINE_TIMEOUT: '25'
+    ports: ['127.0.0.1:${DEFENSE_PORT:-18084}:8000']
+    networks: [default, web]
+    volumes: [backend:/data]
+    depends_on:
+      oj-postgres: {condition: service_healthy}
+      oj-redis: {condition: service_healthy}
+  oj-judge:
+    image: registry.cn-hongkong.aliyuncs.com/oj-image/judge:1.6.1@sha256:2dd902870f5e6f69866aa339a6a98b6da9eb1693e2e9936dce23d73203151501
+    read_only: true
+    cap_drop: [SETPCAP, MKNOD, NET_BIND_SERVICE, SYS_CHROOT, SETFCAP, FSETID]
+    pids_limit: 128
+    mem_limit: 1g
+    cpus: 2
+    tmpfs: ['/judger:size=256m,exec', '/log:size=16m', '/tmp:size=256m,exec']
+    environment:
+      TOKEN: ${JUDGE_SERVER_TOKEN:?Use scripts/defense_demo.py}
+      SERVICE_URL: http://oj-judge:8080
+      BACKEND_URL: http://oj-backend:8000/api/judge_server_heartbeat/
+    volumes:
+      - type: volume
+        source: backend
+        target: /test_case
+        read_only: true
+        volume: {subpath: test_case}
+    entrypoint: [/bin/sh, -c]
+    command:
+      - mkdir -p /judger/run /judger/spj; chown compiler:code /judger/run; chmod 711 /judger/run; cd /app; while true; do .venv/bin/python service.py; sleep 2; done & exec .venv/bin/gunicorn server:app --workers 1 --threads 2 --bind 0.0.0.0:8080 --error-logfile /log/gunicorn.log
+    healthcheck:
+      test: [CMD, /app/.venv/bin/python, -c, "import socket; socket.create_connection(('127.0.0.1',8080),2).close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    depends_on:
+      oj-backend: {condition: service_healthy}
+  oj-tutor:
+    profiles: [model]
+    image: ${DEFENSE_TUTOR_IMAGE:-lizardjudge-tutor:local}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    cpus: 1
+    pids_limit: 64
+    environment:
+      TUTOR_TECHNICAL_DEMO: '1'
+      OJ_VERIFICATION_ONLY: '1'
+      MODEL_TIMEOUT_S: '20'
+    volumes: ['${DEFENSE_MODEL_DIRECTORY:-./artifacts/no-model}:/models:ro']
+    healthcheck:
+      start_period: 120s
+    depends_on:
+      oj-model: {condition: service_healthy}
+  oj-model:
+    profiles: [model]
+    image: ghcr.io/ggml-org/llama.cpp:server@sha256:8c74db29f1a2bef3f0a331b52c4d6214601dfceed4bee0b94cc48b3b23ff257d
+    command: ['-m', '/models/model.gguf', '--host', '0.0.0.0', '--port', '8080', '-c', '4096', '-np', '1', '--threads', '2']
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 3g
+    cpus: 2
+    pids_limit: 64
+    tmpfs: [/tmp:size=64m]
+    volumes: ['${DEFENSE_MODEL_DIRECTORY:-./artifacts/no-model}:/models:ro']
+    healthcheck:
+      test: [CMD, python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      start_period: 120s
+      retries: 20
+volumes:
+  postgres:
+  redis:
+  backend:
+networks:
+  default: {internal: true}
+  web:

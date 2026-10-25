@@ -1,5 +1,21 @@
 # Estado de las 30 historias
 
+## Alcance vigente: defensa y entrega funcional
+
+El usuario autorizó fusionar los PR #50/#123/#3 y ejecutar entrenamiento real
+sobre sintéticos. Esos PR ya están fusionados; el sincronizador con gates se
+reactivó tras pasar la CI de main. La continuación de defensa está en sus ramas
+`codex/defensa-entrega` hasta su verificación e integración final.
+
+Se completaron dataset técnico 144 ejemplos, clasificador y QLoRA reales,
+conversión GGUF y tres pistas del modelo dentro de la aplicación con juez real.
+La [matriz funcional](defensa/alcance.md) y [evidencias](defensa/evidencias.json)
+documentan resultados y límites. El piloto queda como propuesta no ejecutada,
+fuera del requisito de cierre funcional. Las revisiones humanas de producción
+no se sustituyen ni se inventan; no bloquean este experimento explícito de defensa.
+
+## Registro anterior de criterios académicos
+
 Se conservan los diez sprints, responsables y 174 SP del tablero. “Implementado”
 significa código y prueba bajo revisión en los tres PR; no implica merge, aprobación
 humana ni despliegue. Ninguna historia se cierra solamente por tener archivos.
