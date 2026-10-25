@@ -174,10 +174,10 @@ def evaluar_contenido(contenido, revision, validar):
 
 def prompt_motor():
     """Mensaje de sistema leído del propio motor para no divergir de producción."""
-    coincidencia = re.search(r'^\s*prompt = "(.+)"$', MOTOR.read_text(encoding="utf-8"), re.MULTILINE)
-    if not coincidencia:
-        raise SystemExit("No se encontró el prompt en tutor_engine/server.py.")
-    return coincidencia.group(1)
+    spec = importlib.util.spec_from_file_location("tutor_prompt", RAIZ / "OnlineJudge/ai_tutor/ml/prompt.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.SYSTEM_PROMPT
 
 
 def carga_peticion(item, peticion, sistema_motor):
