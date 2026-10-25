@@ -53,12 +53,14 @@ jobs:
           python -m playwright install --with-deps chromium
           python3 scripts/test_tutor_engine.py
           python3 scripts/test_defense_tools.py
+          python3 scripts/test_production_config.py
           python3 scripts/verify_ui.py --project lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }}
           python3 scripts/verify_submission_e2e.py --project lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }}
           python3 scripts/verify_engine_unavailable.py
           docker tag lizardjudge-sprints:local lizardjudge-defensa:local
           python3 scripts/defense_demo.py init --project lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}
           python3 scripts/verify_defense_demo.py --project lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          python3 scripts/verify_admin_production.py --project lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}
           python3 scripts/defense_demo.py stop --project lizardjudge-defensa-sync-${{ github.run_id }}-${{ github.run_attempt }}
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/respaldos/runtime:/reports" aquasec/trivy:0.75.0 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --format json --output /reports/image-audit.json lizardjudge-sprints:local
 
