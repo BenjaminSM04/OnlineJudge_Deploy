@@ -1,0 +1,92 @@
+# Instalación real: rutas y volumen explícitos, sin crear una base vacía.
+services:
+  oj-postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-onlinejudge}
+      POSTGRES_USER: ${POSTGRES_USER:-onlinejudge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes: [pgdata17:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [private]
+  oj-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${OJ_REDIS_DATA:?}
+        target: /data
+        bind: {create_host_path: false}
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [private]
+  oj-judge:
+    image: registry.cn-hongkong.aliyuncs.com/oj-image/judge:1.6.1@sha256:2dd902870f5e6f69866aa339a6a98b6da9eb1693e2e9936dce23d73203151501
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [SETPCAP, MKNOD, NET_BIND_SERVICE, SYS_CHROOT, SETFCAP, FSETID]
+    pids_limit: 256
+    mem_limit: ${JUDGE_MEMORY_LIMIT:-2g}
+    cpus: ${JUDGE_CPU_LIMIT:-2}
+    tmpfs: [/tmp:size=256m]
+    volumes:
+      - type: bind
+        source: ${OJ_BACKEND_DATA:?}/test_case
+        target: /test_case
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${OJ_JUDGE_LOG:?}
+        target: /log
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${OJ_JUDGE_RUN:?}
+        target: /judger
+        bind: {create_host_path: false}
+    environment:
+      SERVICE_URL: http://oj-judge:8080
+      BACKEND_URL: http://oj-backend:8000/api/judge_server_heartbeat/
+      TOKEN: ${JUDGE_SERVER_TOKEN:?}
+    networks: [private]
+  oj-backend:
+    image: ${OJ_APP_IMAGE:?Seleccione la imagen validada por SHA o digest}
+    restart: unless-stopped
+    depends_on:
+      oj-postgres: {condition: service_healthy}
+      oj-redis: {condition: service_healthy}
+    volumes:
+      - type: bind
+        source: ${OJ_BACKEND_DATA:?}
+        target: /data
+        bind: {create_host_path: false}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-onlinejudge}
+      POSTGRES_USER: ${POSTGRES_USER:-onlinejudge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_HOST: oj-postgres
+      REDIS_HOST: oj-redis
+      JUDGE_SERVER_TOKEN: ${JUDGE_SERVER_TOKEN:?}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:?}
+      COOKIE_SECURE: '1'
+      TRUST_PROXY_HTTPS: ${TRUST_PROXY_HTTPS:-0}
+      MAX_WORKER_NUM: ${MAX_WORKER_NUM:-2}
+      AI_TUTOR_MODEL_ENABLED: '0'
+    # HTTPS termina en el proxy controlado. Coolify debe conectar a la red web.
+    ports: ['127.0.0.1:${OJ_HTTP_PORT:-18080}:8000']
+    networks: [private, web]
+volumes:
+  pgdata17:
+    external: true
+    name: ${OJ_PG17_VOLUME:?}
+networks:
+  private: {internal: true}
+  web: {}

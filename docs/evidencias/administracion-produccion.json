@@ -1,0 +1,37 @@
+{
+  "production_access": false,
+  "routes": [
+    "problem/edit/1",
+    "conf",
+    "",
+    "user",
+    "announcement",
+    "judge-server",
+    "problems",
+    "contest",
+    "conf",
+    "problem/edit/1",
+    "conf",
+    "problem/edit/1"
+  ],
+  "page_errors": [],
+  "text_cases_saved_and_judged": true,
+  "verdicts": [
+    -1,
+    0
+  ],
+  "smtp_external_email_sent": false,
+  "smtp_resend_saved": true,
+  "blank_password_omitted": true,
+  "mobile_widths": [
+    375,
+    1280
+  ],
+  "backend_source": "6b40a1a3538b3d5bb9615ec360a82c18a9215d5d",
+  "frontend_source": "387fea73e0546f7e1b0251635b3aac03f756af48",
+  "backend_tests": 316,
+  "production_compose_tests": 2,
+  "editor_language_change_preserves_content": true,
+  "lint": "sin errores ni advertencias",
+  "scope": "verificacion local sintetica; servidor y entrega real de SMTP no verificados"
+}

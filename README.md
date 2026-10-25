@@ -17,6 +17,10 @@ La [guía de defensa y entrega](docs/defensa/README.md) reúne la demostración 
 el guion, las preguntas y los resultados reales del experimento QLoRA sintético.
 El piloto se conserva como propuesta documental, sin resultados de campo inventados.
 
+La [guía de producción para lj.isilp.com](docs/produccion-lj-isilp.md) describe el
+Compose con almacenamiento explícito, el proxy HTTPS y SMTP Resend. Incluye casos
+privados editables en texto y las comprobaciones previas a operar la instalación real.
+
 ```sh
 python scripts/defense_demo.py init --project lizardjudge-defensa-mi-entrega --build
 ```
