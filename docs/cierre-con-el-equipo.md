@@ -1,4 +1,20 @@
-# Cierre con el equipo: lo que solo pueden hacer personas
+# Cierre para defensa y entrega funcional
+
+El alcance vigente está en [defensa/README.md](defensa/README.md). Por decisión
+del responsable, el piloto se conserva como propuesta documental y no bloquea
+esta entrega. No hay participantes, consentimientos o resultados de campo.
+
+Ya se fusionaron los PR #50/#123/#3, se verificó main y se reactivó el sincronizador
+con gates. La continuación añade entrenamiento QLoRA real y modelo GGUF experimental,
+dataset sintético 144/36 controles, demostración local, guion y preguntas de defensa.
+Los [resultados](defensa/evidencias.json) distinguen formato/guard/latencia y eficacia.
+
+Las aprobaciones pedagógicas/institucionales descritas debajo quedan para una
+eventual evaluación de producción o con población real. No fueron realizadas,
+no se falsifican mediante comandos y no son un requisito pendiente de la defensa
+funcional autorizada. El servidor permanece fuera de estas verificaciones.
+
+## Registro anterior: propuesta para validación institucional futura
 
 La implementación técnica está bajo revisión con evidencia reproducible. Lo que sigue necesita
 decisiones, revisiones o permisos humanos reales. Ningún comando de este

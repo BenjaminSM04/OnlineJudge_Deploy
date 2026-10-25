@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-for module, file in (("guard", "OnlineJudge/ai_tutor/services/output_guard.py"), ("classifier_runtime", "OnlineJudge/ai_tutor/ml/runtime.py"), ("bounded_http", "OnlineJudge/utils/bounded_http.py"), ("tutor_server", "tutor_engine/server.py")):
+for module, file in (("guard", "OnlineJudge/ai_tutor/services/output_guard.py"), ("classifier_runtime", "OnlineJudge/ai_tutor/ml/runtime.py"), ("bounded_http", "OnlineJudge/utils/bounded_http.py"), ("tutor_prompt", "OnlineJudge/ai_tutor/ml/prompt.py"), ("tutor_server", "tutor_engine/server.py")):
     spec = importlib.util.spec_from_file_location(module, ROOT / file)
     instance = importlib.util.module_from_spec(spec)
     sys.modules[module] = instance
@@ -24,6 +24,23 @@ server = sys.modules["tutor_server"]
 
 
 class IntegrityTests(unittest.TestCase):
+    def test_technical_artifact_is_rejected_by_default_and_requires_synthetic_classifier(self):
+        with TemporaryDirectory() as temp:
+            old_root = server.ROOT
+            self.addCleanup(setattr, server, "ROOT", old_root)
+            server.ROOT = Path(temp)
+            (server.ROOT / "model.gguf").write_bytes(b"fixture-not-a-real-model")
+            classifier = server.ROOT / "classifier.json"
+            classifier.write_text(json.dumps({"dataset_version": "fixture", "scope": "technical-demo"}))
+            entry = lambda p: {"file": p.name, "sha256": hashlib.sha256(p.read_bytes()).hexdigest()}
+            manifest = {"scope": "technical-demo", "decision": "demonstration", "human_review": "not-performed",
+                        "license": "fixture", "model_revision": "a" * 40, "dataset_version": "fixture",
+                        "generator": entry(server.ROOT / "model.gguf"), "classifier": entry(classifier)}
+            (server.ROOT / "manifest.json").write_text(json.dumps(manifest))
+            with self.assertRaises(ValueError):
+                server.load_artifacts()
+            self.assertEqual(server.load_artifacts(technical_demo=True)[0]["scope"], "technical-demo")
+
     def test_only_exact_model_path_can_be_approved(self):
         with TemporaryDirectory() as temp:
             server.ROOT = Path(temp)
