@@ -27,7 +27,7 @@
   "navegador_juez_tutor_cpu": {"login_real": true, "veredictos_sembrados": false, "wrong_answers": 3, "accepted": 1,
     "pistas": 3, "fuentes": ["model", "model", "model"], "latencias_pistas_ms": [12174, 9917, 10832], "problemas_distintos_resueltos": 1, "errores_javascript": 0,
     "modelo_cpu": 2, "limite_modelo_ram": "3 GB", "presupuesto_motor_s": 20, "presupuesto_backend_s": 25},
-  "pruebas_locales": {"django_pg17": 300, "motor": 9, "herramientas_defensa": 2, "resultado": "OK"},
+  "pruebas_locales": {"django_pg17": 301, "motor": 9, "herramientas_defensa": 2, "resultado": "OK", "conceptos_versionados_con_modelo_activo": true},
   "revision_independiente": {"hallazgos_importantes": 2, "corregidos_con_regresiones": 2},
   "pesos_en_git": false,
   "evidencia_completa_local": "artifacts/defensa-final-20261024 y respaldos/runtime; no contiene datos reales de estudiantes"

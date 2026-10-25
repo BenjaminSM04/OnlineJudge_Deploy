@@ -7,7 +7,7 @@ demostración experimental integrada, sobre datos exclusivamente sintéticos.
 Se fusionaron backend #50, frontend #123 y deploy #3; el sincronizador ya usa
 gates y está activo. La continuación se entrega por sus nuevos PR de defensa.
 Ver [guía vigente](defensa/README.md), [guion](defensa/guion.md) y
-[resultados verificables](defensa/evidencias.json): 300 pruebas Django,
+[resultados verificables](defensa/evidencias.json): 301 pruebas Django,
 144 variantes/36 controles y tres pistas del modelo en el navegador.
 
 El piloto es una propuesta no ejecutada y queda fuera del cierre funcional por
