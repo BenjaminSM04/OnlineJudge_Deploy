@@ -68,16 +68,41 @@ def main():
         rows = page.locator(".text-case")
         rows.first.locator("textarea").nth(0).fill("10 20\n")
         rows.first.locator("textarea").nth(1).fill("30\n")
-        page.get_by_role("button", name="Aplicar casos de texto", exact=True).click()
+        pending = []
+        def hold_cases(route):
+            if route.request.method == "POST":
+                pending.append(route)
+            else:
+                route.continue_()
+        page.route("**/api/admin/test_case/text", hold_cases)
+        apply = page.get_by_role("button", name="Aplicar casos de texto", exact=True)
+        apply.click()
         page.locator(".el-message-box").get_by_role("button", name="Sí", exact=True).click()
-        expect(page.get_by_text("Casos preparados. Guarda el problema para utilizarlos.", exact=True)).to_be_visible()
+        for _ in range(100):
+            if pending:
+                break
+            page.wait_for_timeout(50)
+        assert pending, "No llegó la petición de casos."
+        # Cambiar el texto mientras la petición anterior está en vuelo no lo marca aplicado.
+        rows.first.locator("textarea").nth(0).fill("100 200\n")
+        rows.first.locator("textarea").nth(1).fill("300\n")
+        answer = pending[0].fetch()
+        pending[0].fulfill(response=answer)
+        expect(apply).to_be_enabled()
+        page.unroute("**/api/admin/test_case/text", hold_cases)
+        page.get_by_role("button", name=re.compile(r"Guardar$")).click()
+        expect(page.get_by_text("Aplica los cambios de los casos de texto antes de guardar el problema.", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: "/api/admin/test_case/text" in r.url and r.request.method == "POST"):
+            apply.click()
+            page.locator(".el-message-box").get_by_role("button", name="Sí", exact=True).click()
+        expect(apply).to_be_enabled()
         page.screenshot(path=str(output / "casos-texto.png"), full_page=True)
         with page.expect_response(lambda r: "/api/admin/problem" in r.url and r.request.method == "PUT") as saved:
             page.get_by_role("button", name=re.compile(r"Guardar$")).click()
         assert not saved.value.json()["error"], "No se guardó el problema."
         page.wait_for_url(re.compile(r"/admin/problems/?$"))
         fetched = context.request.get(root + "/api/admin/test_case/text?problem_id=1").json()
-        assert not fetched["error"] and fetched["data"]["cases"][0] == {"input": "10 20\n", "output": "30\n"}
+        assert not fetched["error"] and fetched["data"]["cases"][0] == {"input": "100 200\n", "output": "300\n"}
         go("conf")
         page.get_by_role("button", name="Usar Resend", exact=True).click()
         smtp = page.locator("form").first

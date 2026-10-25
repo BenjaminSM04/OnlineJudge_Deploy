@@ -28,10 +28,11 @@
     1280
   ],
   "backend_source": "6b40a1a3538b3d5bb9615ec360a82c18a9215d5d",
-  "frontend_source": "387fea73e0546f7e1b0251635b3aac03f756af48",
+  "frontend_source": "cb88c809f0e240248529ac307efec2bcb902477c",
   "backend_tests": 316,
   "production_compose_tests": 2,
   "editor_language_change_preserves_content": true,
+  "text_cases_inflight_edit_protected": true,
   "lint": "sin errores ni advertencias",
   "scope": "verificacion local sintetica; servidor y entrega real de SMTP no verificados"
 }
