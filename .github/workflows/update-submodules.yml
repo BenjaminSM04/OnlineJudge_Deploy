@@ -14,9 +14,11 @@ concurrency:
 jobs:
   update-submodules:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
     permissions:
       contents: write
+      checks: read
+      packages: write
     
     steps:
       - name: Obtiene main y sus submódulos
@@ -37,7 +39,36 @@ jobs:
           echo "Backend: $(git -C OnlineJudge rev-parse HEAD)"
           echo "Frontend: $(git -C OnlineJudgeFE rev-parse HEAD)"
           
-      - name: Guarda y publica los punteros actualizados
+      - name: Exige pruebas aprobadas del SHA exacto de ambos repositorios
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/check_submodule_checks.py > compatibilidad-submodulos.json
+
+      - name: Ensaya la pareja candidata con respaldo, migración y reversión
+        run: python3 scripts/verify_upgrade.py --project lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }} --keep-running
+
+      - name: Verifica la interfaz candidata con API y juez reales
+        run: |
+          pip install playwright==1.64.0
+          python -m playwright install --with-deps chromium
+          python3 scripts/test_tutor_engine.py
+          python3 scripts/verify_ui.py --project lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          python3 scripts/verify_submission_e2e.py --project lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          python3 scripts/verify_engine_unavailable.py
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/respaldos/runtime:/reports" aquasec/trivy:0.75.0 image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --format json --output /reports/image-audit.json lizardjudge-sprints:local
+
+      - name: Conserva evidencia de compatibilidad
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibilidad-submodulos
+          path: |
+            compatibilidad-submodulos.json
+            respaldos/**/upgrade-result.json
+            respaldos/runtime/ui/
+            respaldos/runtime/submission-e2e.json
+            respaldos/runtime/image-audit.json
+
+      - name: Guarda y publica únicamente los punteros comprobados
         shell: bash
         run: |
           set -euo pipefail
@@ -54,3 +85,21 @@ jobs:
           
           # Sube los cambios al repositorio
           git push origin HEAD:main
+
+      - name: Publica las imágenes de la sincronización comprobada
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          revision="$(git rev-parse HEAD)"
+          destination="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lizardjudge:sha-${revision}"
+          echo "$GH_TOKEN" | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+          docker build --build-arg FRONTEND_COMMIT="$(git -C OnlineJudgeFE rev-parse HEAD)" --build-arg BACKEND_COMMIT="$(git -C OnlineJudge rev-parse HEAD)" --build-arg INTEGRATION_COMMIT="$revision" -t "$destination" .
+          docker push "$destination"
+          engine="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lizardjudge-tutor:sha-${revision}"
+          docker build -f tutor_engine/Dockerfile --build-arg INTEGRATION_COMMIT="$revision" -t "$engine" .
+          docker push "$engine"
+
+      - name: Detiene el ensayo conservando sus volúmenes
+        if: always()
+        run: docker compose -p lizardjudge-upgrade-sync-${{ github.run_id }}-${{ github.run_attempt }} -f compose.upgrade-verify.yml stop

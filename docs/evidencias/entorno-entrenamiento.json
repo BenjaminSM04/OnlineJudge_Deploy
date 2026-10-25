@@ -1,0 +1,21 @@
+{
+  "alcance": "comprobacion-de-entorno-sin-datos-ni-entrenamiento",
+  "fecha": "2026-10-24",
+  "requisitos": "OnlineJudge/deploy/requirements-training.txt",
+  "torch": "2.14.1+cu126",
+  "cuda_build": "12.6",
+  "cuda_disponible": true,
+  "gpu": "NVIDIA GeForce RTX 2060 SUPER",
+  "vram_total_mib": 8191,
+  "compute_capability": "7.5",
+  "transformers": "5.20.2",
+  "peft": "0.21.2",
+  "bitsandbytes": "0.50.2",
+  "plataforma": "Windows-11-10.0.26300-SP0",
+  "capa_nf4_4bit": "forward correcto (error medio 0.0435 frente a fp16)",
+  "lora_gradientes": "correctos sobre capa 4 bits",
+  "nota_precision": "is_bf16_supported() devuelve True en Turing por emulación; training_dtype usa fp16 con capacidad < 8.0",
+  "instalacion": "torch desde https://download.pytorch.org/whl/cu126; el índice PyPI entrega la build CPU",
+  "entrenamiento_real": false,
+  "motivo": "no existe dataset aprobado ni selección revisada"
+}

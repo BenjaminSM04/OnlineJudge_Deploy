@@ -1,0 +1,159 @@
+{
+  "alcance": "medicion-preliminar-sobre-borradores-sinteticos",
+  "muestra_aprobada": false,
+  "seleccion": "no-realizada",
+  "revision_humana": "pendiente",
+  "script": "scripts/measure_tutor_candidates.py",
+  "corridas": [
+    {
+      "modo": "gpu",
+      "forma_peticion": "benchmark",
+      "imagen": "ghcr.io/ggml-org/llama.cpp:server-cuda",
+      "imagen_id": "sha256:490d8cd8000203a3ab8fdfce14ef931e2aa85affd4dd4447bcc75f299f00fd9a",
+      "limites": {
+        "cpus": null,
+        "memoria": "6g",
+        "capas_gpu": 99,
+        "contexto": 4096,
+        "ranuras": 1
+      },
+      "hardware": {
+        "plataforma": "Windows-11-10.0.26300-SP0",
+        "gpu": "NVIDIA GeForce RTX 2060 SUPER",
+        "cpus_host": 12
+      },
+      "fecha_utc": "2026-10-24T03:34:21+00:00",
+      "borradores_sha256": "8293afc1ac6540f4d6658a3b108082c46b951e36ffa40b71d23be93a80bdb066",
+      "borradores_usados": 54,
+      "candidatos": [
+        {
+          "model_id": "Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF",
+          "revision": "f86cb2c1fa58255f8052cc32aeede1b7482d4361",
+          "license": "apache-2.0",
+          "quantization": "Q4_K_M",
+          "sha256": "cc324af070c2ecbfd324a30884d2f951a7ff756aba85cb811a6ec436933bb046",
+          "tiempo_carga_s": 91.58,
+          "latencia_p50_ms": 573.5,
+          "latencia_p95_ms": 2543,
+          "latencia_max_ms": 46144,
+          "errores": 0,
+          "json_valido": 0,
+          "veredictos_guard": {
+            "no-evaluable": 54
+          },
+          "tokens_por_segundo_p50": 163.25,
+          "ram_pico_mib": 1792.0,
+          "vram_pico_mib": 1290.0,
+          "completadas_en_0_5_s_motor_anterior": 20,
+          "completadas_en_8_s_motor_corregido": 53,
+          "aceptadas_por_guard_en_8_s": 0
+        },
+        {
+          "model_id": "Qwen/Qwen3-1.7B-GGUF",
+          "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+          "license": "apache-2.0",
+          "quantization": "Q8_0",
+          "sha256": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+          "tiempo_carga_s": 93.59,
+          "latencia_p50_ms": 3414.5,
+          "latencia_p95_ms": 4361,
+          "latencia_max_ms": 26160,
+          "errores": 0,
+          "json_valido": 7,
+          "veredictos_guard": {
+            "no-evaluable": 47,
+            "rechazado:type": 4,
+            "rechazado:rule-4": 1,
+            "aceptado": 2
+          },
+          "tokens_por_segundo_p50": 126.23,
+          "ram_pico_mib": 4108.3,
+          "vram_pico_mib": 2310.0,
+          "completadas_en_0_5_s_motor_anterior": 0,
+          "completadas_en_8_s_motor_corregido": 53,
+          "aceptadas_por_guard_en_8_s": 2
+        }
+      ]
+    },
+    {
+      "modo": "cpu",
+      "forma_peticion": "motor",
+      "imagen": "ghcr.io/ggml-org/llama.cpp:server@sha256:8c74db29f1a2bef3f0a331b52c4d6214601dfceed4bee0b94cc48b3b23ff257d",
+      "imagen_id": "sha256:8c74db29f1a2bef3f0a331b52c4d6214601dfceed4bee0b94cc48b3b23ff257d",
+      "limites": {
+        "cpus": "2",
+        "memoria": "3g",
+        "hilos": 2,
+        "contexto": 4096,
+        "ranuras": 1
+      },
+      "hardware": {
+        "plataforma": "Windows-11-10.0.26300-SP0",
+        "gpu": "NVIDIA GeForce RTX 2060 SUPER",
+        "cpus_host": 12
+      },
+      "fecha_utc": "2026-10-24T04:38:06+00:00",
+      "borradores_sha256": "8293afc1ac6540f4d6658a3b108082c46b951e36ffa40b71d23be93a80bdb066",
+      "borradores_usados": 54,
+      "candidatos": [
+        {
+          "model_id": "Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF",
+          "revision": "f86cb2c1fa58255f8052cc32aeede1b7482d4361",
+          "license": "apache-2.0",
+          "quantization": "Q4_K_M",
+          "sha256": "cc324af070c2ecbfd324a30884d2f951a7ff756aba85cb811a6ec436933bb046",
+          "tiempo_carga_s": 24.31,
+          "latencia_p50_ms": 6696.5,
+          "latencia_p95_ms": 10510,
+          "latencia_max_ms": 10854,
+          "errores": 0,
+          "json_valido": 54,
+          "veredictos_guard": {
+            "aceptado": 46,
+            "rechazado:rule-0": 3,
+            "rechazado:rule-4": 5
+          },
+          "tokens_por_segundo_p50": 18.18,
+          "ram_pico_mib": 1083.4,
+          "vram_pico_mib": null,
+          "completadas_en_0_5_s_motor_anterior": 0,
+          "completadas_en_8_s_motor_corregido": 40,
+          "aceptadas_por_guard_en_8_s": 39
+        },
+        {
+          "model_id": "Qwen/Qwen3-1.7B-GGUF",
+          "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+          "license": "apache-2.0",
+          "quantization": "Q8_0",
+          "sha256": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+          "tiempo_carga_s": 39.84,
+          "latencia_p50_ms": 38810.0,
+          "latencia_p95_ms": 43504,
+          "latencia_max_ms": 47593,
+          "errores": 14,
+          "json_valido": 16,
+          "veredictos_guard": {
+            "no-evaluable": 38,
+            "rechazado:rule-4": 5,
+            "aceptado": 10,
+            "rechazado:type": 1
+          },
+          "tokens_por_segundo_p50": 10.82,
+          "ram_pico_mib": 3072.0,
+          "vram_pico_mib": null,
+          "completadas_en_0_5_s_motor_anterior": 0,
+          "completadas_en_8_s_motor_corregido": 0,
+          "aceptadas_por_guard_en_8_s": 0
+        }
+      ]
+    }
+  ],
+  "observaciones": [
+    "La corrida GPU usa la petición del benchmark (sin response_format): sirve como referencia de latencia/VRAM, no de formato.",
+    "La corrida CPU replica la petición del motor y los límites de compose.tutor.yml (2 CPU, 3 GB): es la referencia del hardware de producción.",
+    "Qwen3-1.7B Q8_0 alcanza el límite de 3 GB y tarda ~39 s por respuesta en CPU: no es viable con esos límites.",
+    "Qwen2.5-Coder-1.5B Q4_K_M usa ~1.1 GB y tiene p50 6.7 s/p95 10.5 s en CPU; con el plazo anterior de 0.5 s ninguna respuesta llegaba.",
+    "Aceptado por el guard no significa pedagógicamente adecuado: varias muestras proponen la corrección directa. Requiere revisión humana con la rúbrica.",
+    "No mide calidad pedagógica, ni el hardware real del servidor; la muestra no está aprobada y no habilita selección ni entrenamiento."
+  ]
+}

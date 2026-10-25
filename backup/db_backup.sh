@@ -1,1 +1,4 @@
-docker compose exec -it oj-postgres pg_dumpall -c -U onlinejudge > db_backup_`date +%Y_%m_%d"_"%H_%M_%S`.sql
+#!/bin/sh
+# Se exige proyecto explícito y un directorio nuevo; nunca se sobrescribe un respaldo.
+set -eu
+exec python3 "$(dirname "$0")/database.py" backup "$@"

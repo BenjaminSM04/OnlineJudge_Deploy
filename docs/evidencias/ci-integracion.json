@@ -1,0 +1,60 @@
+{
+  "integracion_sha": "c50e1364c2af476d184b77259ae4243e1c0d99a4",
+  "backend_sha": "d9cb562b4bb2ec60ab488d1a3de2616fb1444812",
+  "frontend_sha": "1dd30ea8eb6aca57438740aa0429b17ed1e76530",
+  "ejecucion_pull_request": {
+    "url": "https://github.com/BenjaminSM04/OnlineJudge_Deploy/actions/runs/40056198026",
+    "conclusion": "success",
+    "publica_imagenes": false,
+    "plataforma": "ubuntu GitHub Actions (Linux azure x86_64)",
+    "resultados": {
+      "suite_django_pg17": "Ran 242 tests, OK",
+      "frontend": "13 pruebas de componentes/navegación y backports OK",
+      "actualizacion": {
+        "backend_historico": "72fc56327644e8a48e350c40a383a7949b984217",
+        "tablas_originales_comprobadas": 21,
+        "columnas_originales_preservadas": true,
+        "clave_y_sesion_historica_preservadas": true,
+        "redis_restaurado_en_volumen_nuevo": true,
+        "archivos_restaurados_en_volumen_nuevo": true,
+        "rollback_antes_de_escrituras": "passed"
+      },
+      "chromium": "14 comprobaciones aprobadas, 0 errores de página",
+      "protocolo_juez": "6 lenguajes aprobados con imagen fijada por digest",
+      "envios_reales": "6 envíos navegador -> API -> Dramatiq -> juez, todos AC, veredictos no sembrados, 1 logro único",
+      "carga_fallback": "24 respuestas, concurrencia 4, p50 95.54 ms, p95 106.4 ms, 4 rechazos de cuota; pico de memoria no medido; sin inferencia de modelo",
+      "trivy_imagen_combinada": {
+        "artifact_id": "sha256:a0f3ba9b6957c7b5753e2fb2a9c76527fab9abe6e4ca67fb97cda8d880164021",
+        "severidades_analizadas": "HIGH,CRITICAL",
+        "hallazgos": 0
+      },
+      "motor_sin_artefactos": "health/feedback 503 comprobados"
+    }
+  },
+  "ejecucion_push": {
+    "url": "https://github.com/BenjaminSM04/OnlineJudge_Deploy/actions/runs/40056195214",
+    "conclusion": "failure",
+    "verificaciones": "todas aprobadas antes del paso de publicación",
+    "paso_fallido": "Publica imágenes por SHA sin operar el alojamiento",
+    "error": "GHCR rechazó el manifiesto de ghcr.io/benjaminsm04/lizardjudge con 'denied' tras subir las capas",
+    "causa_probable": "el paquete lizardjudge ya existía sin etiquetas y sin acceso de escritura para Actions de OnlineJudge_Deploy",
+    "imagenes_publicadas": false,
+    "accion_requerida": "el dueño del paquete concede Write a OnlineJudge_Deploy en Package settings > Manage Actions access (o elimina el paquete vacío) y se vuelve a ejecutar el job"
+  },
+  "servidor_desplegado": false,
+  "acceso_produccion": false,
+  "publicacion_posterior": {
+    "integracion_sha": "cf7174e712b948e9ec8b0b3325336ff1ad93df26",
+    "backend_sha": "767fbb966381399d06843c436534991932b25012",
+    "frontend_sha": "1dd30ea8eb6aca57438740aa0429b17ed1e76530",
+    "ejecucion_push": "https://github.com/BenjaminSM04/OnlineJudge_Deploy/actions/runs/40059321280",
+    "ejecucion_pull_request": "https://github.com/BenjaminSM04/OnlineJudge_Deploy/actions/runs/40059325399",
+    "conclusion": "success",
+    "imagenes": {
+      "ghcr.io/benjaminsm04/lizardjudge:sha-cf7174e712b948e9ec8b0b3325336ff1ad93df26": "sha256:0cc12d14a91c1aaa8aa5862d8671bd50ad0bb3ee334c23ce70e3dadaf747ac2b",
+      "ghcr.io/benjaminsm04/lizardjudge-tutor:sha-cf7174e712b948e9ec8b0b3325336ff1ad93df26": "sha256:bccc2207be25ab2baa5e07bc51135aabb81927f169b9813b68a3476098737139"
+    },
+    "etiquetas_oci_verificadas": true,
+    "nota": "El rechazo 'denied' de 40056195214 no se repitió en 40059069973 ni 40059321280; las imágenes son públicas y no implican despliegue."
+  }
+}

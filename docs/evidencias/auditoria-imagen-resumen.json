@@ -1,0 +1,52 @@
+{
+  "created_at": "2026-10-24T02:33:35.581160064Z",
+  "artifact_id": "sha256:9cfd5c869dc275f040ee53919c633b55d2822ee3a044124ba476fd15489b827a",
+  "counts": {
+    "MEDIUM": 5,
+    "LOW": 1
+  },
+  "findings": [
+    {
+      "id": "CVE-2025-8869",
+      "package": "pip",
+      "severity": "MEDIUM",
+      "version": "25.0.1",
+      "fixed": "25.3"
+    },
+    {
+      "id": "CVE-2026-13346",
+      "package": "pip",
+      "severity": "MEDIUM",
+      "version": "25.0.1",
+      "fixed": "26.2.0"
+    },
+    {
+      "id": "CVE-2026-3219",
+      "package": "pip",
+      "severity": "MEDIUM",
+      "version": "25.0.1",
+      "fixed": "26.1"
+    },
+    {
+      "id": "CVE-2026-6357",
+      "package": "pip",
+      "severity": "MEDIUM",
+      "version": "25.0.1",
+      "fixed": "26.1"
+    },
+    {
+      "id": "CVE-2026-8643",
+      "package": "pip",
+      "severity": "MEDIUM",
+      "version": "25.0.1",
+      "fixed": "26.1.2"
+    },
+    {
+      "id": "CVE-2026-1703",
+      "package": "pip",
+      "severity": "LOW",
+      "version": "25.0.1",
+      "fixed": "26.0"
+    }
+  ]
+}
