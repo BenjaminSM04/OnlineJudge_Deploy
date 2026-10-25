@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Estado](https://img.shields.io/badge/estado-en%20desarrollo-yellow?style=for-the-badge)
+![Estado](https://img.shields.io/badge/estado-entrega%20funcional-blue?style=for-the-badge)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Python](https://img.shields.io/badge/Backend-Python%203.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Vue](https://img.shields.io/badge/Frontend-Vue.js%202-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
@@ -12,6 +12,17 @@
 Proyecto académico desarrollado para la materia de **Sistemas II** — Universidad Privada del Valle (UNIVALLE).
 
 </div>
+
+La [guía de defensa y entrega](docs/defensa/README.md) reúne la demostración local,
+el guion, las preguntas y los resultados reales del experimento QLoRA sintético.
+El piloto se conserva como propuesta documental, sin resultados de campo inventados.
+
+```sh
+python scripts/defense_demo.py init --project lizardjudge-defensa-mi-entrega --build
+```
+
+Este perfil crea sus propios datos ficticios y publica solo loopback. Para usar el
+modelo ajustado, montar su directorio con `--model-directory`; ver la guía.
 
 ---
 

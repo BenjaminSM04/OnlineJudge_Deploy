@@ -1,5 +1,22 @@
 # Entrega técnica de LizardJudge — 24/10/2026
 
+## Entrega vigente para defensa
+
+El cierre funcional solicitado incluye ahora entrenamiento QLoRA real y una
+demostración experimental integrada, sobre datos exclusivamente sintéticos.
+Se fusionaron backend #50, frontend #123 y deploy #3; el sincronizador ya usa
+gates y está activo. La continuación se entrega por sus nuevos PR de defensa.
+Ver [guía vigente](defensa/README.md), [guion](defensa/guion.md) y
+[resultados verificables](defensa/evidencias.json): 301 pruebas Django,
+144 variantes/36 controles y tres pistas del modelo en el navegador.
+
+El piloto es una propuesta no ejecutada y queda fuera del cierre funcional por
+decisión del responsable. El modo normal conserva aprobaciones y modelo apagado
+por defecto; el perfil técnico admite el artefacto experimental explícito. La
+instalación real sigue a cargo del operador.
+
+## Registro de la revisión anterior
+
 La versión candidata permite practicar, juzgar envíos y usar el tutor de respaldo,
 con mascota personal y tema adaptable. Conserva Vue 2 y añade la transición
 coordinada Django 5.2/Python 3.12/PostgreSQL 17. Las ramas están preparadas para

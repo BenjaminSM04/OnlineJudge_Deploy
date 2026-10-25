@@ -25,6 +25,8 @@ def main():
         standard = "Standard IO"
         file = "File IO"
     scope = {"ProblemIOMode": ProblemIOMode}
+    # Los identificadores son puros y compartidos con el dataset; no cargar ORM.
+    exec(compile(Path("OnlineJudge/judge/language_names.py").read_text(encoding="utf-8"), "language_names.py", "exec"), scope)
     exec(compile(tree, "languages.py", "exec"), scope)
     name = "lizardjudge-protocol-" + uuid.uuid4().hex[:10]
     token = secrets.token_urlsafe(32)
