@@ -29,3 +29,6 @@ artifacts/
 *.sql
 *.sha256
 *.tar.gz
+
+# Documentos privados de despliegue
+claude-despliegue.md
