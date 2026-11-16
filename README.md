@@ -13,20 +13,9 @@ Proyecto académico desarrollado para la materia de **Sistemas II** — Universi
 
 </div>
 
-La [guía de defensa y entrega](docs/defensa/README.md) reúne la demostración local,
-el guion, las preguntas y los resultados reales del experimento QLoRA sintético.
-El piloto se conserva como propuesta documental, sin resultados de campo inventados.
-
-La [guía de producción para lj.isilp.com](docs/produccion-lj-isilp.md) describe el
-Compose con almacenamiento explícito, el proxy HTTPS y SMTP Resend. Incluye casos
-privados editables en texto y las comprobaciones previas a operar la instalación real.
-
-```sh
-python scripts/defense_demo.py init --project lizardjudge-defensa-mi-entrega --build
-```
-
-Este perfil crea sus propios datos ficticios y publica solo loopback. Para usar el
-modelo ajustado, montar su directorio con `--model-directory`; ver la guía.
+**Versión 2.2.3** — backend 2.2.3, frontend 2.2.1, PostgreSQL 17 y tutor con
+modelo QLoRA opcional. Las herramientas de ensayo y defensa de la 2.1 están en
+[`legado/v2.1/`](legado/v2.1/) y no se usan con esta versión.
 
 ---
 
@@ -44,141 +33,116 @@ LizardJudge es una plataforma web de tipo **Online Judge** que permite a estudia
 
 ## Arquitectura
 
-El sistema está compuesto por **4 servicios Docker** que trabajan en conjunto:
+Desde la 2.2 el frontend y el backend son imágenes separadas, compiladas desde
+los submódulos `OnlineJudgeFE/` y `OnlineJudge/`:
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Docker Compose                 │
-│                                                 │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────┐  │
-│  │  Redis   │  │ Postgres │  │ Judge Server │  │
-│  │ (Cache)  │  │  (Base   │  │ (Evaluador   │  │
-│  │          │  │  de Datos)│  │  de código)  │  │
-│  └────┬─────┘  └────┬─────┘  └──────┬───────┘  │
-│       │              │               │          │
-│       └──────┬───────┘───────────────┘          │
-│              │                                  │
-│     ┌────────▼─────────┐                        │
-│     │   OJ Backend     │                        │
-│     │  (Django + Nginx  │                        │
-│     │  + Frontend Vue) │                        │
-│     │                  │                        │
-│     │  Puerto 80 (HTTP)│                        │
-│     │  Puerto 443(HTTPS│)                       │
-│     └──────────────────┘                        │
-└─────────────────────────────────────────────────┘
+ navegador ──► oj-frontend (nginx, puerto 80) ──► oj-backend (Django, 8000)
+                                                    │      │       ▲
+                                    oj-postgres ◄───┘      ▼       │ latidos
+                                    oj-redis  ◄──────── cola ──► oj-judge
+                         (opcional) oj-tutor ──► oj-model (llama.cpp)
 ```
 
 | Servicio | Tecnología | Función |
 |----------|-----------|---------|
-| **oj-backend** | Python 3.12 / Django / Nginx | API REST + serve del frontend compilado |
-| **oj-judge** | C/C++ Sandbox | Ejecuta y evalúa las soluciones de forma segura |
-| **oj-postgres** | PostgreSQL 17 | Base de datos relacional; volumen restaurado explícito |
+| **oj-frontend** | Vue 2 + nginx sin privilegios | Sirve la interfaz y reenvía `/api` y `/public` |
+| **oj-backend** | Python 3.12 / Django 5.2 | API REST, colas y tareas |
+| **oj-migrate** | Misma imagen del backend | Aplica migraciones al arrancar y termina |
+| **oj-judge** | Sandbox C/C++ | Ejecuta y evalúa las soluciones de forma aislada |
+| **oj-postgres** | PostgreSQL 17 | Base de datos |
 | **oj-redis** | Redis 7 | Caché y cola de tareas |
+| **oj-tutor / oj-model** | Opcionales (`compose.tutor.yml`) | Explicaciones y «Proponer con IA» con el modelo aprobado |
 
 ---
 
-## Instalación y Ejecución
+## Instalación y ejecución
 
-Para actualizar una instalación existente, lea primero
-[Actualización y recuperación](docs/actualizacion-django52-pg17.md).
-No ejecutar la instalación rápida sobre una base PostgreSQL 10 existente.
-La [guía de entrega](docs/entrega.md) reúne evidencias y aprobaciones pendientes.
-El tutor generativo permanece apagado hasta la evaluación del modelo.
+### Requisitos
 
-### Requisitos previos
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo.
-- Espacio para dos bases independientes, imágenes y respaldos durante el ensayo.
-- El perfil opcional de modelos reserva hasta 3 GB adicionales para llama.cpp.
-- Conexión a internet (solo la primera vez, para descargar imágenes base).
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (o Docker Engine con Compose v2) en marcha.
+- Unos 6 GB de disco para imágenes; 2,5 GB de RAM extra si se activa el tutor con modelo.
+- Internet la primera vez, para descargar dependencias e imágenes base.
 
 ### Pasos
 
-1. **Clonar el repositorio:**
+1. **Clonar con los submódulos:**
 
    ```bash
    git clone --recurse-submodules https://github.com/BenjaminSM04/OnlineJudge_Deploy
    cd OnlineJudge_Deploy
    ```
 
-2. **Verificar primero en un entorno sintético aislado:**
+   Si ya estaba clonado: `git pull && git submodule update --init --recursive`.
+
+2. **Crear el archivo `.env`** a partir del ejemplo y completar los dos secretos:
 
    ```bash
-   python scripts/verify_upgrade.py --project lizardjudge-upgrade-demostracion-01 --keep-running
+   cp .env.example .env
+   python -c "import secrets; print(secrets.token_urlsafe(32))"   # úselo para POSTGRES_PASSWORD
+   python -c "import secrets; print(secrets.token_urlsafe(40))"   # úselo para JUDGE_SERVER_TOKEN
    ```
 
-   El nombre debe ser nuevo. El comando construye ambas versiones, ensaya la
-   recuperación y ejecuta la suite. Genera credenciales efímeras en memoria y
-   escucha solo en `http://127.0.0.1:18082`. No utiliza datos del servidor.
-   No recree sus contenedores con otro entorno; para repetir elija otro nombre.
-
-3. **Verificar que todos los contenedores estén saludables:**
+3. **Compilar y levantar:**
 
    ```bash
-   docker ps -a
+   docker compose up -d --build
    ```
 
-   El backend y los servicios de este proyecto deben estar saludables. El ensayo
-   mantiene separados origen, destino y Redis restaurado; conserva sus volúmenes.
-
-4. **Acceder a la plataforma:**
-
-   | URL | Descripción |
-   |-----|-------------|
-   | `http://127.0.0.1:18082` | Página principal del ensayo |
-   | `http://127.0.0.1:18082/admin` | Panel de administración del ensayo |
-
-   En una instalación nueva, cree el administrador explícitamente:
+   La primera compilación tarda varios minutos. Para incluir el tutor con modelo:
 
    ```bash
-   docker compose -p lizardjudge-upgrade-demostracion-01 -f compose.upgrade-verify.yml exec oj-backend python manage.py inituser --username administrador --action create_super_admin
+   docker compose -f docker-compose.yml -f compose.tutor.yml up -d --build
    ```
 
-   La contraseña se solicita en la terminal. Una actualización conserva los usuarios existentes.
+4. **Crear el administrador** (la contraseña se pide en la terminal):
 
-   El ensayo no inicia el juez: `verify_submission_e2e.py` lo prepara y comprueba
-   mediante seis envíos reales; consulte la guía de entrega.
+   ```bash
+   docker compose exec oj-backend python manage.py create_admin --username admin
+   ```
 
-Para una instalación nueva independiente, prepare un `.env` privado desde
-`.env.example`, cree explícitamente un volumen PG17 nuevo y asígnelo a
-`OJ_PG17_VOLUME`. Para actualizar, este volumen debe contener la restauración
-verificada; crear uno vacío no migra nada. En HTTP local `COOKIE_SECURE=0`;
-en HTTPS real `COOKIE_SECURE=1`, con hosts y orígenes explícitos.
+5. **Entrar** en `http://localhost` (o el puerto de `OJ_HTTP_PORT`) y en
+   `http://localhost/admin` para el panel.
+
+Para comprobar que todo funciona sin tocar su instalación:
+`bash scripts/verify_stack.sh` levanta un proyecto aparte en `http://127.0.0.1:18090`
+y verifica interfaz, API y juez (luego bórrelo con
+`docker compose -p lizardjudge-prueba --env-file .verification/ci.env down -v`).
+
+### Dominio y HTTPS
+
+Con un dominio propio, añádalo a `DJANGO_ALLOWED_HOSTS`. Si un proxy (Cloudflare,
+Traefik, Caddy…) sirve HTTPS delante del puerto 80, ponga además
+`DJANGO_CSRF_TRUSTED_ORIGINS=https://su-dominio`, `COOKIE_SECURE=1` y
+`TRUST_PROXY_HTTPS=1`.
+
+### Datos
+
+Todo se guarda en volúmenes de Docker con nombre (base, Redis, casos de prueba,
+archivos públicos y configuración). `docker compose down` los conserva;
+**`docker compose down -v` los borra**. Las instalaciones de la 2.1 guardaban
+datos en `./data` y en un volumen PG17 externo: para pasarlos a esta versión,
+restaure el volcado de PostgreSQL y copie `data/backend/test_case` y
+`data/backend/public` a los volúmenes nuevos antes de abrir el sitio
+(ver [`legado/v2.1/`](legado/v2.1/)).
 
 ---
 
-## Estructura del Proyecto
+## Estructura del proyecto
 
 ```
-OnlineJudgeDeploy/
-├── Dockerfile              # Build multi-stage (Frontend + Backend)
-├── docker-compose.yml      # Orquestación de servicios
-├── .dockerignore            # Excluye node_modules, .git, etc.
-├── .gitignore
-├── README.md
-│
-├── OnlineJudge/            # Backend (Python/Django)
-│   ├── account/            # Módulo de autenticación
-│   ├── announcement/       # Módulo de anuncios
-│   ├── contest/            # Módulo de concursos
-│   ├── problem/            # Módulo de problemas
-│   ├── submission/         # Módulo de envíos
-│   ├── judge/              # Integración con el judge server
-│   ├── deploy/             # Configuración de despliegue (Nginx, Supervisor)
-│   ├── oj/                 # Configuración principal de Django
-│   └── manage.py
-│
-├── OnlineJudgeFE/          # Frontend (Vue.js 2)
-│   ├── src/                # Código fuente
-│   ├── build/              # Scripts de Webpack
-│   ├── config/             # Configuración de entornos
-│   └── package.json
-│
-└── data/                   # Datos persistentes (generado por Docker, no se sube)
-    ├── backend/
-    ├── postgres/
-    └── redis/
+OnlineJudge_Deploy/
+├── docker-compose.yml      # Stack completo (compila desde los submódulos)
+├── compose.tutor.yml       # Tutor con modelo (opcional)
+├── .env.example            # Variables a copiar en .env
+├── scripts/
+│   ├── verify_stack.sh            # Prueba el stack en un proyecto aislado
+│   └── check_submodule_checks.py  # Exige CI verde antes de mover los submódulos
+├── backup/                 # Respaldo de base y archivos
+├── docs/                   # Documentación del proyecto y de los sprints
+├── legado/v2.1/            # Compose, scripts y guías de la versión 2.1
+├── OnlineJudge/            # Backend (submódulo, Django)
+└── OnlineJudgeFE/          # Frontend (submódulo, Vue 2)
 ```
 
 ---
@@ -186,10 +150,10 @@ OnlineJudgeDeploy/
 ## Comandos útiles
 
 ```bash
-# Revisar y detener solo el ensayo, conservando sus volúmenes
-docker compose -p lizardjudge-upgrade-demostracion-01 -f compose.upgrade-verify.yml ps
-docker compose -p lizardjudge-upgrade-demostracion-01 -f compose.upgrade-verify.yml logs --tail 50 oj-backend
-docker compose -p lizardjudge-upgrade-demostracion-01 -f compose.upgrade-verify.yml stop
+docker compose ps                         # estado de los servicios
+docker compose logs --tail 100 oj-backend # registros del backend
+git pull && git submodule update --init --recursive && docker compose up -d --build  # actualizar
+docker compose stop                       # detener conservando los datos
 ```
 
 ---
