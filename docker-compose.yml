@@ -1,29 +1,137 @@
+# LizardJudge 2.2.3: compila backend y frontend desde los submódulos.
+# Uso: copiar .env.example a .env, completar los secretos y ejecutar
+#   docker compose up -d --build
+# El tutor con modelo es opcional: añadir -f compose.tutor.yml (ver README).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-backend: &backend
+  build:
+    context: ./OnlineJudge
+    args:
+      APP_REVISION: ${BACKEND_REVISION:-local}
+  image: lizardjudge-backend:local
+  # El contenedor corre sin root (usuario 900 de la imagen).
+  user: "900:903"
+  environment: &backend-env
+    OJ_ENV: production
+    POSTGRES_HOST: oj-postgres
+    POSTGRES_PORT: "5432"
+    POSTGRES_DB: ${POSTGRES_DB:-onlinejudge}
+    POSTGRES_USER: ${POSTGRES_USER:-onlinejudge}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}
+    REDIS_HOST: oj-redis
+    REDIS_PORT: "6379"
+    # Mínimo 32 caracteres; el mismo valor lo usa el juez.
+    JUDGE_SERVER_TOKEN: ${JUDGE_SERVER_TOKEN:?Defina JUDGE_SERVER_TOKEN en .env (32 caracteres o más)}
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,oj-backend}
+    DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+    # En local por HTTP las cookies no pueden ser seguras; con HTTPS poner 1.
+    COOKIE_SECURE: ${COOKIE_SECURE:-0}
+    # 1 solo si un proxy propio (Cloudflare, Traefik, etc.) termina TLS delante.
+    TRUST_PROXY_HTTPS: ${TRUST_PROXY_HTTPS:-0}
+    MAX_WORKER_NUM: ${MAX_WORKER_NUM:-2}
+    # Sin compose.tutor.yml el tutor usa solo el diagnóstico determinista.
+    AI_TUTOR_MODEL_ENABLED: ${AI_TUTOR_MODEL_ENABLED:-0}
+    AI_TUTOR_ENGINE_URL: http://oj-tutor:8080
+    AI_TUTOR_ENGINE_TIMEOUT: ${AI_TUTOR_ENGINE_TIMEOUT:-30}
+    # «Proponer con IA»: debe superar SUGGEST_TIMEOUT_S del motor y no pasar de 105 s.
+    AI_TUTOR_SUGGEST_TIMEOUT: ${AI_TUTOR_SUGGEST_TIMEOUT:-100}
+  volumes:
+    - backend-config:/data/config
+    - backend-public:/data/public
+    - test-cases:/data/test_case
+    - backend-logs:/data/log
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging: *logging
+
 services:
-
-  oj-redis:
-    image: redis:7-alpine
-    restart: always
-    volumes:
-      - ./data/redis:/data
-
   oj-postgres:
-    image: postgres:17-alpine
-    restart: always
-    volumes:
-      - pgdata17:/var/lib/postgresql/data
+    image: postgres:17-alpine@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-onlinejudge}
       POSTGRES_USER: ${POSTGRES_USER:-onlinejudge}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Conserve la contraseña vigente en el entorno privado}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}
+    volumes:
+      - pgdata17:/var/lib/postgresql/data
     healthcheck:
-      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
       timeout: 5s
-      retries: 30
+      retries: 10
+    logging: *logging
+
+  oj-redis:
+    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+  # Aplica migraciones y configura el token del juez; termina y deja paso al backend.
+  oj-migrate:
+    <<: *backend
+    command: ["migrate"]
+    restart: "no"
+    depends_on:
+      oj-postgres:
+        condition: service_healthy
+      oj-redis:
+        condition: service_healthy
+
+  oj-backend:
+    <<: *backend
+    command: ["serve"]
+    restart: unless-stopped
+    expose:
+      - "8000"
+    depends_on:
+      oj-migrate:
+        condition: service_completed_successfully
+      oj-redis:
+        condition: service_healthy
+      oj-postgres:
+        condition: service_healthy
+
+  # nginx sin privilegios: sirve la interfaz y reenvía /api y /public al backend.
+  oj-frontend:
+    build:
+      context: ./OnlineJudgeFE
+      args:
+        APP_REVISION: ${FRONTEND_REVISION:-local}
+    image: lizardjudge-frontend:local
+    user: "101:101"
+    restart: unless-stopped
+    ports:
+      - "${OJ_HTTP_BIND:-0.0.0.0}:${OJ_HTTP_PORT:-80}:8080"
+    depends_on:
+      oj-backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *logging
 
   oj-judge:
+    # El sandbox del juez necesita su usuario y capacidades originales para aislar envíos.
     image: registry.cn-hongkong.aliyuncs.com/oj-image/judge:1.6.1@sha256:2dd902870f5e6f69866aa339a6a98b6da9eb1693e2e9936dce23d73203151501
-    restart: always
+    platform: linux/amd64
+    restart: unless-stopped
     read_only: true
     cap_drop:
       - SETPCAP
@@ -35,45 +143,26 @@ services:
     tmpfs:
       - /tmp
     volumes:
-      - ./data/backend/test_case:/test_case:ro
-      - ./data/judge_server/log:/log
-      - ./data/judge_server/run:/judger
+      - test-cases:/test_case:ro
+      - judge-logs:/log
+      - judge-run:/judger
     environment:
-      - SERVICE_URL=http://oj-judge:8080
-      - BACKEND_URL=http://oj-backend:8000/api/judge_server_heartbeat/
-      - TOKEN=${JUDGE_SERVER_TOKEN:?Conserve el token vigente en el entorno privado}
-      # - judger_debug=1
-
-  oj-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: oj-backend:local
-    restart: always
+      SERVICE_URL: http://oj-judge:8080
+      BACKEND_URL: http://oj-backend:8000/api/judge_server_heartbeat/
+      TOKEN: ${JUDGE_SERVER_TOKEN:?Defina JUDGE_SERVER_TOKEN en .env}
     depends_on:
-      oj-redis: {condition: service_started}
-      oj-postgres: {condition: service_healthy}
-      oj-judge: {condition: service_started}
-    volumes:
-      - ./data/backend:/data
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-onlinejudge}
-      - POSTGRES_USER=${POSTGRES_USER:-onlinejudge}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Conserve la contraseña vigente en el entorno privado}
-      - JUDGE_SERVER_TOKEN=${JUDGE_SERVER_TOKEN:?Conserve el token vigente en el entorno privado}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:?Defina los hosts públicos y localhost sin comodines}
-      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-}
-      - COOKIE_SECURE=${COOKIE_SECURE:-1}
-      - TRUST_PROXY_HTTPS=${TRUST_PROXY_HTTPS:-0}
-      # - FORCE_HTTPS=1
-      # - STATIC_CDN_HOST=cdn.oj.com
-    ports:
-      - "0.0.0.0:80:8000"
-      - "0.0.0.0:443:1443"
+      oj-backend:
+        condition: service_healthy
+    logging: *logging
 
+# Los datos viven en volúmenes con nombre: «docker compose down» los conserva,
+# «docker compose down -v» los BORRA.
 volumes:
-  # Se conserva la definición histórica; nunca se conecta PostgreSQL 17 a ella.
-  pgdata:
   pgdata17:
-    external: true
-    name: ${OJ_PG17_VOLUME:?Seleccione explícitamente el volumen nuevo restaurado y verificado}
+  redis-data:
+  backend-config:
+  backend-public:
+  test-cases:
+  backend-logs:
+  judge-logs:
+  judge-run:
