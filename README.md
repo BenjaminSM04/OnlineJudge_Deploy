@@ -13,7 +13,7 @@ Proyecto académico desarrollado para la materia de **Sistemas II** — Universi
 
 </div>
 
-**Versión 2.2.3** — backend 2.2.3, frontend 2.2.1, PostgreSQL 17 y tutor con
+**Versión 2.2.3** — backend 2.2.3, frontend 2.2.2, PostgreSQL 17 y tutor con
 modelo QLoRA opcional. Las herramientas de ensayo y defensa de la 2.1 están en
 [`legado/v2.1/`](legado/v2.1/) y no se usan con esta versión.
 
